@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Mirror - Register</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .nav-icon-link {
+            display: flex;
+            align-items: center;
+        }
+        .nav-icon-link svg {
+            color: var(--light-text);
+            transition: color 0.3s ease;
+            margin-right: 5px;
+        }
+        .nav-icon-link svg:hover {
+            color: var(--primary-purple);
+        }
+        .user-profile-text {
+            color: var(--light-text);
+            font-weight: 500;
+        }
+        .user-profile-text:hover {
+            color: var(--primary-purple);
+        }
+        .error-message {
+            color: red;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand"><a href="{{ url_for('index') }}" class="nav-link active">Interview Mirror</a></div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('index') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('about') }}" class="nav-link">About</a></li>
+            <li><a href="{{ url_for('Contactus') }}" class="nav-link">Contact</a></li>
+            <li class="logged-out-only"><a href="{{ url_for('register') }}" class="btn nav-btn-primary active">Sign Up</a></li>
+            <li class="logged-out-only"><a href="{{ url_for('login') }}" class="btn nav-btn-secondary">Log In</a></li>
+        </ul>
+    </nav>
+
+    <main class="container form-page-container">
+        <div class="form-card">
+            <h2>Create Your Account</h2>
+            <form id="registerForm" method="POST" action="{{ url_for('register') }}">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="username" placeholder="Enter your name" required>
+                    <div class="error-message" id="nameError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    <div class="error-message" id="emailError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirm_password" placeholder="Confirm your password" required>
+                    <div class="error-message" id="confirmPasswordError"></div>
+                </div>
+                <button type="submit" class="btn primary-btn full-width-btn">Register</button>
+            </form>
+            <p class="form-footer">Already have an account? <a href="{{ url_for('login') }}">Log In here</a></p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Interview Mirror. All rights reserved.</p>
+    </footer>
+
+    <!-- Optional: Client-side validation -->
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
+            let isValid = true;
+
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            document.getElementById('nameError').textContent = '';
+            document.getElementById('emailError').textContent = '';
+            document.getElementById('passwordError').textContent = '';
+            document.getElementById('confirmPasswordError').textContent = '';
+
+            if (!name) {
+                document.getElementById('nameError').textContent = 'Name cannot be empty.';
+                isValid = false;
+            }
+            if (!email || !email.includes('@')) {
+                document.getElementById('emailError').textContent = 'Please enter a valid email.';
+                isValid = false;
+            }
+            if (!password || password.length < 6) {
+                document.getElementById('passwordError').textContent = 'Password must be at least 6 characters.';
+                isValid = false;
+            }
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPasswordError').textContent = 'Passwords do not match.';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                event.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

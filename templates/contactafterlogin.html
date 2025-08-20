@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Mirror - Contact Us</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons for profile and logout (these styles are now less relevant for this page, but kept for consistency with main.css) -->
+    <style>
+        .nav-icon-link {
+            display: flex;
+            align-items: center;
+        }
+        .nav-icon-link svg {
+            color: var(--light-text);
+            transition: color 0.3s ease;
+            margin-right: 5px; /* Space between icon and text if any */
+        }
+        .nav-icon-link svg:hover {
+            color: var(--primary-purple);
+        }
+        .user-profile-text {
+            color: var(--light-text);
+            font-weight: 500;
+        }
+        .user-profile-text:hover {
+            color: var(--primary-purple);
+        }
+    </style>
+</head>
+<body data-auth-redirect="true"> <!-- Added data-auth-redirect for JS to handle redirection -->
+    <!-- Navigation Bar (Unified Structure) -->
+    <nav class="navbar">
+        <div class="navbar-brand"><a href="{{ url_for('homepageafterlogin') }}" class="nav-link active">Interview Mirror</a></div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('homepageafterlogin') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('aboutafterlogin') }}" class="nav-link">About</a></li>
+            <li><a href="{{ url_for('Contactafterlogin') }}" class="nav-link">Contact</a></li>
+            <li><a href="{{ url_for('userhistory') }}" class="nav-link logged-in-only">History</a></li>
+            <!-- Removed: History link for logged-in users -->
+
+           <!-- Logged-in options (always shown on this page) -->
+            <li class="nav-icon-link logged-in-only">
+                <a href="{{ url_for('userhistory') }}" class="nav-link user-profile-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+                    <span id="loggedInUsernameNav">{{ logged_in_user }}</span>
+                </a>
+            </li>
+            <li class="logged-in-only"><a href="{{ url_for('index') }}" class="btn nav-btn-secondary">Log Out</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <h1>Contact Us</h1>
+        
+    </main>
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2025 Interview Mirror. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="{{ url_for('static', filename='scripts/main.js') }}"></script>
+</body>
+</html>

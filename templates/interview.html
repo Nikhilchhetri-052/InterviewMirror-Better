@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Mirror - Interview</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icon for play button (using a simple SVG for modern look) -->
+    <style>
+        .play-icon {
+            width: 18px;
+            height: 18px;
+            fill: currentColor; /* Inherit color from parent */
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        .nav-icon-link {
+            display: flex;
+            align-items: center;
+        }
+        .nav-icon-link svg {
+            color: var(--light-text);
+            transition: color 0.3s ease;
+            margin-right: 5px; /* Space between icon and text if any */
+        }
+        .nav-icon-link svg:hover {
+            color: var(--primary-purple);
+        }
+        .user-profile-text {
+            color: var(--light-text);
+            font-weight: 500;
+        }
+        .user-profile-text:hover {
+            color: var(--primary-purple);
+        }
+    </style>
+</head>
+<body data-auth-required="true"> <!-- Added data-auth-required for JS to enforce login -->
+    <!-- Navigation Bar (Unified Structure) -->
+    <nav class="navbar">
+        <div class="navbar-brand"><a href="{{ url_for('index') }}" class="nav-link active">Interview Mirror</a></div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('index') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('about') }}" class="nav-link">About</a></li>
+            <li><a href="{{ url_for('Contactus') }}" class="nav-link">Contact</a></li>
+            <!-- Removed: History link for logged-in users -->
+
+            <!-- Logged-out options (always shown on this page unless redirected by JS) -->
+            <li class="logged-out-only"><a href="{{ url_for('register') }}" class="btn nav-btn-primary">Sign Up</a></li>
+            <li class="logged-out-only"><a href="{{ url_for('login') }}" class="btn nav-btn-secondary">Log In</a></li>
+
+            <!-- Removed: Logged-in options (user icon and logout button) -->
+        </ul>
+    </nav>
+
+    <main class="container interview-page-container">
+        <h1 id="interviewRole" class="interview-role-title"></h1>
+        <p class="question-count">Question 1 of 5</p>
+
+        <section class="question-card">
+            <p id="questionText" class="question-text"></p>
+            <div class="ai-voice-player">
+                <div class="ai-voice-info">
+                    <img src="https://placehold.co/30x30/8A2BE2/FFFFFF?text=AI" alt="AI Icon" class="ai-icon">
+                    <span>AI Interviewer</span>
+                    <span id="aiVoiceStatus">Speaking...</span>
+                </div>
+                <button id="playVoiceBtn" class="btn play-voice-btn">
+                    <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="animated-circle-wrapper">
+                <div class="animated-circle" id="animatedCircle"></div>
+            </div>
+        </section>
+
+        <section class="answer-section">
+            <button id="recordAnswerBtn" class="btn primary-btn record-btn">Record Answer</button>
+            <p class="record-hint" id="recordHint">Click "Record Answer" to begin speaking.</p>
+        </section>
+
+        <section class="feedback-section">
+            <h2>Feedback</h2>
+            <div id="aiFeedback" class="feedback-box">
+                <!-- AI feedback will appear here -->
+                Your feedback will appear here after you record your answer.
+            </div>
+        </section>
+
+        <div class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="btn secondary-btn">Back to Home</a>
+            <!-- Could add Next Question button here -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Interview Mirror. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="{{ url_for('static', filename='scripts/main.js') }}"></script>
+    <script type="module">
+        // Page-specific JavaScript for interview.html
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait for Firebase authentication to be ready from main.js
+            while (!window.isAuthReady()) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const role = params.get('role');
+            const interviewRoleElement = document.getElementById('interviewRole');
+            const questionTextElement = document.getElementById('questionText');
+            const animatedCircle = document.getElementById('animatedCircle');
+            const playVoiceBtn = document.getElementById('playVoiceBtn');
+            const recordAnswerBtn = document.getElementById('recordAnswerBtn');
+            const aiFeedback = document.getElementById('aiFeedback');
+            const aiVoiceStatus = document.getElementById('aiVoiceStatus');
+            const recordHint = document.getElementById('recordHint');
+
+            // Display User ID (for multi-user app context as per guidelines)
+            const userIdDisplay = document.querySelector('.user-id-display');
+            userIdDisplay.textContent = `User ID: ${window.getUserId() || 'Not logged in'}`;
+
+
+            if (role) {
+                interviewRoleElement.textContent = `${window.capitalizeFirstLetter(role)} Interview`;
+            } else {
+                interviewRoleElement.textContent = 'General Interview';
+            }
+
+            const questions = {
+                frontend: "Tell me about a challenging frontend project you've worked on and how you overcame obstacles.",
+                backend: "Explain the concept of RESTful APIs and how you've used them in your projects.",
+                devops: "Describe your experience with CI/CD pipelines and tools like Jenkins or GitLab CI.",
+                fullstack: "How do you approach designing a scalable web application from both frontend and backend perspectives?",
+                qa: "What's your approach to testing a new feature, from unit tests to end-to-end tests?",
+                datascience: "Walk me through a data science project you're proud of, focusing on your methodology.",
+                productmanager: "How do you prioritize features for a new product, and what frameworks do you use?"
+            };
+
+            const currentQuestion = questions[role] || "Tell me about yourself and your career aspirations.";
+            questionTextElement.textContent = currentQuestion;
+            aiFeedback.textContent = "Your feedback will appear here after you record your answer.";
+
+            // --- Existing Animation Logic (unchanged) ---
+            function startPulseAnimation() {
+                animatedCircle.classList.add('pulsing');
+                aiVoiceStatus.textContent = 'Speaking...';
+            }
+
+            function stopPulseAnimation() {
+                animatedCircle.classList.remove('pulsing');
+                aiVoiceStatus.textContent = 'Ready.';
+            }
+
+            playVoiceBtn.addEventListener('click', () => {
+                playVoiceBtn.disabled = true;
+                startPulseAnimation();
+                setTimeout(() => {
+                    stopPulseAnimation();
+                    playVoiceBtn.disabled = false;
+                }, 3000);
+            });
+
+            // --- Record Answer and Send to Python Backend ---
+            recordAnswerBtn.addEventListener('click', async () => {
+                recordAnswerBtn.textContent = 'Recording...';
+                recordAnswerBtn.disabled = true;
+                recordHint.textContent = 'Recording your answer. Please speak clearly.';
+                aiFeedback.textContent = 'Analyzing your response...'; // Indicate analysis
+
+                // Simulate recording duration
+                setTimeout(async () => {
+                    recordAnswerBtn.textContent = 'Record Answer';
+                    recordAnswerBtn.disabled = false;
+                    recordHint.textContent = 'Click "Record Answer" to begin speaking.';
+
+                    // --- Simulate User's Answer (replace with actual speech-to-text later) ---
+                    const simulatedUserAnswer = "My answer to the question was a detailed explanation of my experience with project management methodologies, focusing on agile frameworks and stakeholder communication. I also mentioned a specific tool I used for task tracking.";
+
+                    try {
+                        // Send data to your Flask backend for AI feedback
+                        // IMPORTANT: For local development, ensure your Flask app is running on port 5000
+                        // For Canvas, this URL might need adjustment if you deploy a Python backend.
+                        const response = await fetch('http://localhost:5000/api/generate_feedback', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                answer: simulatedUserAnswer,
+                                question: currentQuestion,
+                                role: role
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        const feedback = data.feedback;
+
+                        aiFeedback.textContent = feedback; // Display AI feedback
+
+                        // --- Store interview session data in Firestore (client-side) ---
+                        const db = window.db; // Get db instance from global scope
+                        const currentUserId = window.getUserId();
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                        if (db && currentUserId) {
+                            try {
+                                const interviewSessionsCollection = window.collection(db, `artifacts/${appId}/users/${currentUserId}/interview_sessions`);
+                                await window.addDoc(interviewSessionsCollection, {
+                                    role: role,
+                                    question: currentQuestion,
+                                    userAnswer: simulatedUserAnswer,
+                                    aiFeedback: feedback,
+                                    timestamp: new Date().toISOString()
+                                });
+                                console.log("Interview session stored in Firestore.");
+                                // Redirect to interviewafterlogin.html after saving
+                                window.location.href = "{{ url_for('interviewafterlogin') }}";
+                            } catch (firestoreError) {
+                                console.error("Error storing interview session in Firestore:", firestoreError);
+                                aiFeedback.textContent = "Feedback generated, but failed to save session. Error: " + firestoreError.message;
+                            }
+                        } else {
+                            console.warn("Firestore not ready or user not logged in, skipping session storage.");
+                        }
+
+                    } catch (error) {
+                        console.error('Error generating or fetching AI feedback:', error);
+                        aiFeedback.textContent = `Error getting feedback: ${error.message}. Please try again.`;
+                    }
+                }, 5000); // Simulate 5 seconds of recording
+            });
+        });
+    </script>
+</body>
+</html>

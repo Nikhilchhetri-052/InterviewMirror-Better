@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Mirror - User History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .dashboard-icon { width: 20px; height: 20px; vertical-align: middle; margin-right: 8px; color: var(--primary-purple); }
+        .session-item { background-color: var(--white); border-radius: 10px; padding: 15px 20px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .session-item:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); }
+        .session-item h4 { color: var(--dark-text); margin-top: 0; margin-bottom: 10px; font-size: 1.1em; }
+        .session-item p { font-size: 0.9em; color: var(--medium-text); margin-bottom: 5px; }
+        .session-item .feedback-summary { font-weight: 500; color: var(--primary-purple); margin-top: 10px; }
+        .placeholder-text { text-align: center; color: var(--medium-text); padding: 20px; font-style: italic; }
+        .nav-icon-link { display: flex; align-items: center; }
+        .nav-icon-link svg { color: var(--light-text); transition: color 0.3s ease; margin-right: 5px; }
+        .nav-icon-link svg:hover { color: var(--primary-purple); }
+        .user-profile-text { color: var(--light-text); font-weight: 500; }
+        .user-profile-text:hover { color: var(--primary-purple); }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand"><a href="{{ url_for('homepageafterlogin') }}" class="nav-link active">Interview Mirror</a></div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('homepageafterlogin') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('aboutafterlogin') }}" class="nav-link">About</a></li>
+            <li><a href="{{ url_for('Contactafterlogin') }}" class="nav-link">Contact</a></li>
+            <li><a href="{{ url_for('userhistory') }}" class="nav-link logged-in-only active">History</a></li>
+            <li class="nav-icon-link logged-in-only">
+                <a href="{{ url_for('userhistory') }}" class="nav-link user-profile-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+                    {{ user.username }}
+                </a>
+            </li>
+            <li class="logged-in-only"><a href="{{ url_for('logout') }}" class="btn nav-btn-secondary">Log Out</a></li>
+        </ul>
+    </nav>
+
+    <main class="container dashboard-container">
+        <h2>Your Profile</h2>
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>User ID:</strong> {{ user._id }}</p> <!-- MongoDB _id or replace with user_id if using custom IDs -->
+
+        <section class="dashboard-section">
+            <h3>Past Interview Sessions</h3>
+            <div id="pastSessionsList" class="sessions-list">
+                {% if user.interview_sessions %}
+                    {% for session in user.interview_sessions %}
+                        <div class="session-item">
+                            <h4>{{ session.role | capitalize }} Interview</h4>
+                            <p><strong>Question:</strong> {{ session.question or 'N/A' }}</p>
+                            <p><strong>Your Answer:</strong> {{ session.userAnswer or 'No answer recorded' }}</p>
+                            <p class="feedback-summary"><strong>AI Feedback:</strong> {{ session.aiFeedback or 'No feedback yet' }}</p>
+                            <p><small>Date: {{ session.timestamp or 'N/A' }}</small></p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="placeholder-text">No past sessions found. Start an interview to see your progress!</p>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Interview Mirror. All rights reserved.</p>
+    </footer>
+</body>
+</html>

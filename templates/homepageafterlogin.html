@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Mirror - Welcome Back!</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons for profile and logout -->
+    <style>
+        .nav-icon-link {
+            display: flex;
+            align-items: center;
+        }
+        .nav-icon-link svg {
+            color: var(--light-text);
+            transition: color 0.3s ease;
+            margin-right: 5px; /* Space between icon and text if any */
+        }
+        .nav-icon-link svg:hover {
+            color: var(--primary-purple);
+        }
+        .user-profile-text {
+            color: var(--light-text);
+            font-weight: 500;
+        }
+        .user-profile-text:hover {
+            color: var(--primary-purple);
+        }
+    </style>
+</head>
+<body data-auth-required="true"> <!-- This page requires authentication -->
+    <!-- Navigation Bar for Logged-in Users -->
+    <nav class="navbar">
+        <div class="navbar-brand"><a href="{{ url_for('homepageafterlogin') }}" class="nav-link active">Interview Mirror</a></div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('homepageafterlogin') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('aboutafterlogin') }}" class="nav-link">About</a></li>
+            <li><a href="{{ url_for('Contactafterlogin') }}" class="nav-link">Contact</a></li>
+            <li><a href="{{ url_for('userhistory') }}" class="nav-link logged-in-only">History</a></li>
+
+            <!-- Removed: Logged-out options (Sign Up and Log In buttons) -->
+
+            <!-- Logged-in options (always shown on this page) -->
+            <li class="nav-icon-link logged-in-only">
+                <a href="{{ url_for('userhistory') }}" class="nav-link user-profile-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+                    <span id="loggedInUsernameNav">{{ logged_in_user }}</span>
+                </a>
+            </li>
+            <li class="logged-in-only"><a href="{{ url_for('index') }}" class="btn nav-btn-secondary">Log Out</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="hero-content">
+            <h1>Welcome Back to Interview Mirror!</h1>
+            <p>Continue your practice with AI-powered mock interviews tailored to your desired role. Get instant feedback and improve your performance.</p>
+            <button class="btn primary-btn" onclick="document.getElementById('job-roles-section').scrollIntoView({ behavior: 'smooth' });">Continue Practice</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Job Roles Section -->
+        <section id="job-roles-section" class="job-roles-section">
+            <h2>Choose Your Interview Role</h2>
+            <div class="role-buttons-grid">
+                {% set roles = [
+                    ("frontend", "Frontend Developer"),
+                    ("backend", "Backend Developer"),
+                    ("devops", "DevOps Engineer"),
+                    ("fullstack", "Fullstack Developer"),
+                    ("qa", "QA Engineer"),
+                    ("datascience", "Data Scientist"),
+                    ("productmanager", "Product Manager")
+                ] %}
+                {% for role_value, role_name in roles %}
+                    <button class="btn role-btn" data-role="{{ role_value }}">{{ role_name }}</button>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Interview Mirror. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="{{ url_for('static', filename='scripts/main.js') }}"></script>
+    <script type="module">
+        // Page-specific JavaScript for homepageafterlogin.html
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait for Firebase authentication to be ready from main.js
+            while (!window.isAuthReady()) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            const loggedInUsernameSpan = document.getElementById('loggedInUsernameNav'); // Use Nav ID
+            const logoutBtn = document.getElementById('logoutBtnNav'); // Use Nav ID
+            const currentUserId = window.getUserId();
+            const db = window.db;
+            const auth = window.auth;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+            if (currentUserId && db) {
+                // Fetch user profile to display username
+                try {
+                    const userProfileRef = window.doc(db, `artifacts/${appId}/users/${currentUserId}/profile`, 'user_info');
+                    const userProfileSnap = await window.getDoc(userProfileRef);
+                    if (userProfileSnap.exists()) {
+                        const userData = userProfileSnap.data();
+                        loggedInUsernameSpan.textContent = userData.username || 'User';
+                    } else {
+                        loggedInUsernameSpan.textContent = 'Guest';
+                        console.warn("User profile not found for ID:", currentUserId);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user profile:", error);
+                    loggedInUsernameSpan.textContent = 'User'; // Fallback
+                }
+            }
+
+            // Logout functionality
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    try {
+                        await window.signOut(auth);
+                        alert('You have been logged out.'); // Replace with custom modal
+                        window.location.href = "{{ url_for('index') }}"; // Redirect to public home page
+                    } catch (error) {
+                        console.error("Error logging out:", error);
+                        alert('Error logging out. Please try again.'); // Replace with custom modal
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
