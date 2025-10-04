@@ -6,24 +6,29 @@
 }
 
 :root {
-    /* Color Palette - Inspired by provided images */
-    --primary-purple: #8A2BE2; /* A vibrant purple, close to Blue Violet */
-    --light-purple: #E0BBE4; /* Original light purple */
-    --medium-purple: #957DAD; /* Original medium purple */
-    --dark-text: #333333;
-    --light-text: #666666;
+    /* Color Palette - Modern, welcoming design */
+    --primary-color: #0F766E; /* Teal - professional and calming */
+    --primary-light: #14B8A6; /* Light teal - vibrant accent */
+    --primary-dark: #0D5E57; /* Dark teal - depth */
+    --secondary-color: #2563EB; /* Vibrant blue - trust and clarity */
+    --accent-color: #F59E0B; /* Warm amber - energy and optimism */
+    --accent-light: #FCD34D; /* Light amber */
+    --dark-text: #1F2937;
+    --light-text: #6B7280;
     --white-bg: #FFFFFF;
-    --light-gray-bg: #F8F8F8;
-    --border-color: #EEEEEE;
+    --light-gray-bg: #F9FAFB;
+    --border-color: #E5E7EB;
+    --success-color: #10B981; /* Green for positive feedback */
     --shadow-light: rgba(0, 0, 0, 0.08);
     --shadow-medium: rgba(0, 0, 0, 0.15);
-    --hero-dark-bg: #4A3C5B; /* Changed: Dark purple background color for hero section */
+    --hero-gradient-start: #0F766E;
+    --hero-gradient-end: #2563EB;
 }
 
 body {
     font-family: 'Inter', sans-serif; /* Modern sans-serif font */
     line-height: 1.6;
-    background: linear-gradient(to bottom right, var(--light-purple), var(--medium-purple)); /* Subtle gradient background */
+    background: linear-gradient(135deg, #F0FDFA 0%, #DBEAFE 100%); /* Soft teal to blue gradient */
     color: var(--dark-text);
     display: flex;
     flex-direction: column; /* Allow content to stack vertically */
@@ -44,13 +49,13 @@ body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    border-bottom: 1px solid rgba(138, 43, 226, 0.1);
+    border-bottom: 1px solid rgba(15, 118, 110, 0.1);
 }
 
 .navbar-brand a{
     font-size: 1.5em;
     font-weight: 700;
-    color: var(--primary-purple);
+    color: var(--primary-color);
 }
 
 .navbar-links {
@@ -71,14 +76,14 @@ body {
 }
 
 .nav-link:hover {
-    color: var(--primary-purple);
-    background-color: rgba(138, 43, 226, 0.1);
+    color: var(--primary-color);
+    background-color: rgba(15, 118, 110, 0.1);
     transform: translateY(-2px);
 }
 
 .nav-link.active {
-    color: var(--primary-purple);
-    background-color: rgba(138, 43, 226, 0.15);
+    color: var(--primary-color);
+    background-color: rgba(15, 118, 110, 0.15);
 }
 
 .nav-icon-link {
@@ -92,7 +97,7 @@ body {
 }
 
 .nav-icon-link svg:hover {
-    color: var(--primary-purple);
+    color: var(--primary-color);
 }
 
 
@@ -109,7 +114,7 @@ body {
     max-width: 900px;
     margin: 40px auto;
     flex-grow: 1;
-    border: 1px solid rgba(138, 43, 226, 0.1);
+    border: 1px solid rgba(15, 118, 110, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -121,7 +126,7 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-purple), var(--light-purple), var(--primary-purple));
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light), var(--accent-color));
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite linear;
 }
@@ -133,7 +138,7 @@ body {
 
 /* Headings */
 h1 {
-    color: var(--primary-purple);
+    color: var(--primary-color);
     margin-bottom: 20px;
     font-size: 2.8em;
     font-weight: 700;
@@ -159,7 +164,7 @@ h4 {
     display: inline-flex; /* Use flex for icon alignment */
     align-items: center;
     justify-content: center;
-    background-color: var(--primary-purple);
+    background-color: var(--primary-color);
     color: var(--white-bg);
     padding: 14px 30px;
     border: none;
@@ -169,26 +174,26 @@ h4 {
     font-weight: 600;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     text-decoration: none;
-    box-shadow: 0 4px 10px rgba(138, 43, 226, 0.2); /* Shadow for primary buttons */
+    box-shadow: 0 4px 10px rgba(15, 118, 110, 0.3); /* Shadow for primary buttons */
 }
 
 .btn:hover {
-    background-color: #7a25cc; /* Slightly darker purple on hover */
+    background-color: var(--primary-dark);
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(138, 43, 226, 0.3);
+    box-shadow: 0 6px 15px rgba(15, 118, 110, 0.4);
 }
 
 .btn.secondary-btn {
     background-color: var(--light-gray-bg);
-    color: var(--primary-purple);
-    border: 1px solid var(--primary-purple);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
     box-shadow: none;
 }
 
 .btn.secondary-btn:hover {
-    background-color: var(--light-purple);
+    background-color: var(--primary-light);
     color: var(--white-bg);
-    border-color: var(--light-purple);
+    border-color: var(--primary-light);
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
@@ -202,13 +207,13 @@ h4 {
     padding: 10px 20px;
     font-size: 0.95em;
     background-color: transparent;
-    color: var(--primary-purple);
-    border: 1px solid var(--primary-purple);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
     box-shadow: none;
 }
 
 .btn.nav-btn-secondary:hover {
-    background-color: var(--primary-purple);
+    background-color: var(--primary-color);
     color: var(--white-bg);
 }
 
@@ -219,7 +224,7 @@ h4 {
 
 /* Hero Section (index.html) */
 .hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--hero-gradient-start) 0%, var(--hero-gradient-end) 100%);
     background-size: cover;
     background-position: center;
     color: var(--white-bg);
@@ -241,7 +246,7 @@ h4 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, rgba(138, 43, 226, 0.8), rgba(76, 60, 91, 0.9));
+    background: linear-gradient(45deg, rgba(15, 118, 110, 0.1), rgba(37, 99, 235, 0.1));
     border-radius: 0;
 }
 
@@ -274,7 +279,7 @@ h4 {
     margin-bottom: 30px;
     line-height: 1.2;
     font-weight: 800;
-    background: linear-gradient(45deg, #ffffff, #E0BBE4);
+    background: linear-gradient(45deg, #ffffff, #FCD34D);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -313,7 +318,7 @@ h4 {
 
 .job-roles-section h2 {
     margin-bottom: 50px;
-    color: var(--primary-purple);
+    color: var(--primary-color);
     font-size: 2.5em;
     font-weight: 700;
     position: relative;
@@ -327,7 +332,7 @@ h4 {
     transform: translateX(-50%);
     width: 100px;
     height: 4px;
-    background: linear-gradient(45deg, var(--primary-purple), var(--light-purple));
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
     border-radius: 2px;
 }
 
@@ -343,10 +348,10 @@ h4 {
     padding: 30px 25px;
     font-size: 1.1em;
     font-weight: 600;
-    background: linear-gradient(135deg, var(--primary-purple) 0%, #9d4edd 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--white-bg);
     border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
+    box-shadow: 0 8px 25px rgba(15, 118, 110, 0.3);
     transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
@@ -377,9 +382,9 @@ h4 {
 }
 
 .role-btn:hover {
-    background: linear-gradient(135deg, #9d4edd 0%, var(--primary-purple) 100%);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-light) 100%);
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 15px 40px rgba(138, 43, 226, 0.4);
+    box-shadow: 0 15px 40px rgba(15, 118, 110, 0.4);
 }
 
 .role-btn:active {
@@ -458,7 +463,7 @@ h4 {
     width: 100%;
     max-width: 480px;
     text-align: center;
-    border: 1px solid rgba(138, 43, 226, 0.1);
+    border: 1px solid rgba(15, 118, 110, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -470,12 +475,12 @@ h4 {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-purple), var(--light-purple), var(--primary-purple));
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light), var(--accent-color));
 }
 
 .form-card h2 {
     margin-bottom: 30px;
-    color: var(--primary-purple);
+    color: var(--primary-color);
 }
 
 .form-group {
@@ -508,8 +513,8 @@ h4 {
 .form-group input[type="password"]:focus,
 .form-group input[type="text"]:focus {
     outline: none;
-    border-color: var(--primary-purple);
-    box-shadow: 0 0 0 4px rgba(138, 43, 226, 0.2), 0 8px 25px rgba(138, 43, 226, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.2), 0 8px 25px rgba(15, 118, 110, 0.1);
     background-color: rgba(255, 255, 255, 0.95);
     transform: translateY(-2px);
 }
@@ -528,7 +533,7 @@ h4 {
 }
 
 .form-footer a {
-    color: var(--primary-purple);
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
 }
@@ -562,7 +567,7 @@ h4 {
     border-radius: 20px;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(138, 43, 226, 0.1);
     margin-bottom: 40px;
-    border: 1px solid rgba(138, 43, 226, 0.1);
+    border: 1px solid rgba(15, 118, 110, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -574,7 +579,7 @@ h4 {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--primary-purple), var(--light-purple));
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
 }
 
 .question-text {
@@ -612,12 +617,12 @@ h4 {
 
 .ai-icon {
     border-radius: 50%;
-    background-color: var(--primary-purple);
+    background-color: var(--primary-color);
     padding: 5px;
 }
 
 .play-voice-btn {
-    background-color: var(--primary-purple);
+    background-color: var(--primary-color);
     color: var(--white-bg);
     border-radius: 50%; /* Circular button */
     width: 45px;
@@ -626,11 +631,11 @@ h4 {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
+    box-shadow: 0 2px 8px rgba(15, 118, 110, 0.3);
 }
 
 .play-voice-btn:hover {
-    background-color: #7a25cc;
+    background-color: var(--primary-dark);
     transform: scale(1.05);
 }
 
@@ -646,12 +651,12 @@ h4 {
 .animated-circle {
     width: 150px;
     height: 150px;
-    background-color: var(--light-purple);
+    background-color: var(--primary-light);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 20px rgba(149, 125, 173, 0.4);
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.4);
     transition: all 0.3s ease-out; /* Smooth transition for property changes */
 }
 
@@ -660,17 +665,17 @@ h4 {
     0% {
         transform: scale(1);
         opacity: 1;
-        box-shadow: 0 0 20px rgba(149, 125, 173, 0.4);
+        box-shadow: 0 0 20px rgba(20, 184, 166, 0.4);
     }
     50% {
         transform: scale(1.1);
         opacity: 0.8;
-        box-shadow: 0 0 40px rgba(149, 125, 173, 0.7);
+        box-shadow: 0 0 40px rgba(20, 184, 166, 0.7);
     }
     100% {
         transform: scale(1);
         opacity: 1;
-        box-shadow: 0 0 20px rgba(149, 125, 173, 0.4);
+        box-shadow: 0 0 20px rgba(20, 184, 166, 0.4);
     }
 }
 
@@ -703,13 +708,13 @@ h4 {
 .feedback-section h2 {
     text-align: left;
     margin-bottom: 20px;
-    color: var(--primary-purple);
+    color: var(--primary-color);
 }
 
 .feedback-box {
     background-color: var(--light-gray-bg);
     border: 1px solid var(--border-color);
-    border-left: 5px solid var(--primary-purple); /* Highlight feedback box */
+    border-left: 5px solid var(--primary-color); /* Highlight feedback box */
     padding: 25px;
     border-radius: 8px;
     font-size: 1.05em;
@@ -837,7 +842,7 @@ h4 {
 }
 /* Footer */
 .footer {
-    background: linear-gradient(135deg, var(--primary-purple), #9d4edd);
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: var(--white-bg);
     text-align: center;
     padding: 25px 5%;
@@ -875,8 +880,8 @@ h4 {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 248, 248, 0.9));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 2px solid rgba(138, 43, 226, 0.2);
-    border-left: 6px solid var(--primary-purple);
+    border: 2px solid rgba(15, 118, 110, 0.2);
+    border-left: 6px solid var(--primary-color);
     padding: 30px;
     border-radius: 16px;
     font-size: 1.05em;
@@ -899,7 +904,7 @@ h4 {
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, var(--primary-purple), var(--light-purple));
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
 }
 
 /* Enhanced AI Voice Player */
@@ -910,7 +915,7 @@ h4 {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    border: 2px solid rgba(138, 43, 226, 0.1);
+    border: 2px solid rgba(15, 118, 110, 0.1);
     border-radius: 16px;
     padding: 20px 25px;
     margin-top: 25px;
@@ -920,19 +925,19 @@ h4 {
 
 .ai-voice-player:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 35px rgba(138, 43, 226, 0.15);
+    box-shadow: 0 12px 35px rgba(15, 118, 110, 0.15);
 }
 
 /* Enhanced Animated Circle */
 .animated-circle {
     width: 160px;
     height: 160px;
-    background: linear-gradient(135deg, var(--light-purple), var(--medium-purple));
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 30px rgba(149, 125, 173, 0.5);
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.5);
     transition: all 0.3s ease-out;
     border: 3px solid rgba(255, 255, 255, 0.3);
     position: relative;
@@ -951,15 +956,15 @@ h4 {
 @keyframes enhancedPulse {
     0% {
         transform: scale(1);
-        box-shadow: 0 0 30px rgba(149, 125, 173, 0.5);
+        box-shadow: 0 0 30px rgba(20, 184, 166, 0.5);
     }
     50% {
         transform: scale(1.15);
-        box-shadow: 0 0 50px rgba(149, 125, 173, 0.8);
+        box-shadow: 0 0 50px rgba(20, 184, 166, 0.8);
     }
     100% {
         transform: scale(1);
-        box-shadow: 0 0 30px rgba(149, 125, 173, 0.5);
+        box-shadow: 0 0 30px rgba(20, 184, 166, 0.5);
     }
 }
 
@@ -1044,9 +1049,9 @@ h4 {
 }
 
 .role-btn:hover {
-    background: linear-gradient(135deg, #9d4edd 0%, var(--primary-purple) 100%);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-light) 100%);
     transform: translateY(-8px) rotateX(5deg) scale(1.02);
-    box-shadow: 0 20px 50px rgba(138, 43, 226, 0.4);
+    box-shadow: 0 20px 50px rgba(15, 118, 110, 0.4);
 }
 
 /* Enhanced container hover effect */
