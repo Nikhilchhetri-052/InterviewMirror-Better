@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify,send_file
 from bson.objectid import ObjectId
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 import uuid
 import whisper
+import pyttsx3
 import tempfile
 import soundfile as sf
 from flask_cors import CORS
@@ -181,6 +182,41 @@ def generate_feedback():
     )
 
     return jsonify({"feedback": feedback_text})
+
+@app.route('/speak', methods=['POST'])
+def speak():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
+    try:
+        # Create a temporary file
+        temp_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
+
+        # Initialize pyttsx3 engine
+        engine = pyttsx3.init()
+        engine.setProperty("rate", 150)
+        engine.setProperty("volume", 1.0)
+        voices = engine.getProperty("voices")
+
+        # Choose a voice (female if available)
+        if len(voices) > 1:
+            engine.setProperty("voice", voices[1].id)
+
+        # Save to audio file
+        engine.save_to_file(text, temp_path)
+        engine.runAndWait()
+
+        # Send the file to the frontend
+        return send_file(temp_path, mimetype="audio/wav", as_attachment=False)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        # pyttsx3 creates file before runAndWait; don't delete until after it's sent
+        pass
 
 if __name__ == '__main__':
     
