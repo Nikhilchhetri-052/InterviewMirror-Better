@@ -1,15 +1,23 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from bson.objectid import ObjectId
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 import uuid
+import whisper
+import tempfile
+import soundfile as sf
+from flask_cors import CORS
+
 app = Flask(__name__)
+CORS(app)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/InterviewMirror"
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 mongo = PyMongo(app)
 app.secret_key = "9b1c8c49d3c3e7e456f7ab97d8332a19"
 bcrypt = Bcrypt(app)
 users_collection = mongo.db.users
+
+model = whisper.load_model("base")
 
 @app.context_processor
 def inject_user():
@@ -29,8 +37,8 @@ def login():
         user = users_collection.find_one({"email": email})
         if user and bcrypt.check_password_hash(user['password'], password):
             session['user_id'] = str(user['_id'])
-            session['username'] = user['username']   # 👈 store username
-            session['custom_user_id'] = user['user_id']  # 👈 store short USER001 id
+            session['username'] = user['username']  
+            session['custom_user_id'] = user['user_id']
             flash('Login successful!', 'success')
             return redirect(url_for('homepageafterlogin'))
         else:
@@ -95,7 +103,6 @@ def homepageafterlogin():
         return redirect(url_for('login'))
     return render_template('homepageafterlogin.html')
 
-
 @app.route('/about')
 def about():
     return render_template('about.html')
@@ -129,6 +136,51 @@ def userhistory():
     user = users_collection.find_one({"_id": user_id})
 
     return render_template('userhistory.html', user=user)
+
+@app.route('/record', methods=['POST'])
+def record():
+    import whisper, tempfile
+    from flask import request, jsonify
+
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file uploaded'}), 400
+
+    audio_file = request.files['audio']
+
+    # Save uploaded audio temporarily
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as temp:
+        audio_file.save(temp.name)
+        temp.flush()
+
+        # Load whisper model (cached globally)
+        global whisper_model
+        if 'whisper_model' not in globals():
+            whisper_model = whisper.load_model("base")
+
+        result = whisper_model.transcribe(temp.name)
+        text = result['text']
+
+    # Optionally save transcription
+    with open("transcriptions.txt", "a", encoding="utf-8") as f:
+        f.write(text + "\n")
+
+    return jsonify({'text': text})
+
+@app.route("/api/generate_feedback", methods=["POST"])
+def generate_feedback():
+    data = request.get_json()
+    answer = data.get("answer", "")
+    question = data.get("question", "")
+    role = data.get("role", "")
+
+    # TODO: replace with your real AI logic later
+    feedback_text = (
+        f"Received your answer for the {role} role.\n"
+        f"Question: {question}\n"
+        f"Answer: {answer[:200]}..."
+    )
+
+    return jsonify({"feedback": feedback_text})
 
 if __name__ == '__main__':
     

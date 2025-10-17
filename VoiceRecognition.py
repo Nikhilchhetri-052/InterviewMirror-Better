@@ -1,39 +1,62 @@
 import whisper
 import sounddevice as sd
 import numpy as np
-import queue
-import threading
 import soundfile as sf
-from datetime import datetime
+import keyboard  
 
-# Load whisper model
-model = whisper.load_model("base")  
+print(">> Press 'R' to start recording <<")
+
+# Load whisper model 
+model = whisper.load_model("base")
 
 sample_rate = 16000
-duration = 10  # seconds for each chunk
+recording = False
+audio_data = []   # store recorded chunks
+stream = None     # audio stream object
 
-q = queue.Queue()
+def audio_callback(indata, frames, time, status):
+    """Callback function to store audio while recording"""
+    if recording:
+        audio_data.append(indata.copy())
 
-def record_audio():
-    print("Recording...")
-    while True:
-        audio = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='float32')
-        sd.wait()
-        q.put(np.squeeze(audio))
+def start_recording():
+    global stream, audio_data, recording
+    audio_data = []   # reset buffer
+    recording = True
+    stream = sd.InputStream(samplerate=sample_rate, channels=1, dtype="float32", callback=audio_callback)
+    stream.start()
+    print(">>> Recording Started (Press 'R' again to stop) <<<")
 
-def transcribe_audio():
-    while True:
-        audio = q.get()
-        print("Transcribing...")
-        # Save audio to a temp file
-        sf.write("temp.wav", audio, sample_rate)
-        # Transcribe
+def stop_recording():
+    global stream, recording, audio_data
+    recording = False
+    if stream:
+        stream.stop()
+        stream.close()
+    print(">>> Recording Stopped. Transcribing... <<<")
+
+    # Combine all chunks into one array
+    if audio_data:
+        audio_np = np.concatenate(audio_data, axis=0)
+        sf.write("temp.wav", audio_np, sample_rate)
+
+        # Transcribe with whisper
         result = model.transcribe("temp.wav")
         print("You said:", result['text'])
+
         with open("transcriptions.txt", "a", encoding="utf-8") as f:
             f.write(result['text'] + "\n")
-        
-# Start recording in a separate thread
-threading.Thread(target=record_audio, daemon=True).start()
-# Start transcription loop
-transcribe_audio()
+    else:
+        print("No audio captured.")
+
+def toggle_recording():
+    global recording
+    while True:
+        keyboard.wait("r")
+        if not recording:
+            start_recording()
+        else:
+            stop_recording()
+            print(">> Press 'R' to start recording again <<")
+
+toggle_recording()

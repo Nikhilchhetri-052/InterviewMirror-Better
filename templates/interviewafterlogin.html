@@ -179,8 +179,12 @@
             </section>
 
             <section class="answer-section">
-                <button id="recordAnswerBtn" class="btn primary-btn record-btn">Record Answer</button>
-                <p class="record-hint" id="recordHint">Click "Record Answer" to begin speaking.</p>
+                <div class="record-controls">
+                    <button id="recordBtn" class="btn primary-btn record-btn">🎙️ Start Recording</button>
+                    <button id="pauseBtn" class="btn secondary-btn pause-btn" disabled>⏸ Pause</button>
+                    <button id="stopBtn" class="btn secondary-btn stop-btn" disabled>⏹ Stop</button>
+                </div>
+                <p class="record-hint" id="recordHint">Click "Start Recording" to begin speaking.</p>
             </section>
 
             <section class="feedback-section">
@@ -218,14 +222,29 @@
 
     <script type="module" src="{{ url_for('static', filename='scripts/main.js') }}"></script>
     <script type="module">
+        if (typeof window.getUserId !== "function") {
+            window.getUserId = function () {
+                // fallback to session username injected by Flask if available
+                const userEl = document.querySelector('.user-id-display');
+                return userEl ? userEl.textContent.replace('User ID: ', '').trim() : null;
+            };
+        }
+
+        if (typeof window.capitalizeFirstLetter !== "function") {
+            window.capitalizeFirstLetter = function (str) {
+                if (!str) return "";
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            };
+        }
         document.addEventListener('DOMContentLoaded', async () => {
             const interviewSection = document.getElementById('interviewSection');
             const summarySection = document.getElementById('summarySection');
             const userIdDisplay = document.querySelector('.user-id-display');
             const currentUserId = window.getUserId();
-
+            
             // Show user ID
             userIdDisplay.textContent = `User ID: ${currentUserId || 'Not logged in'}`;
+            const role = "{{ role }}";
 
             // === SIMULATION OF INTERVIEW PROGRESS ===
             // Replace with your actual interview logic
@@ -245,11 +264,11 @@
                 }
             };
 
-            document.getElementById('recordAnswerBtn').addEventListener('click', () => {
+            ///document.getElementById('recordAnswerBtn').addEventListener('click', () => {
                 // Here record answer logic...
                 // For demo, move to next question immediately
-                nextQuestion();
-            });
+                ///nextQuestion();
+            ///});
 
             // === FUNCTION TO LOAD LATEST INTERVIEW SUMMARY ===
             async function loadLatestSummary() {
@@ -289,6 +308,119 @@
                     }
                 }
             }
+            // 🎤 Voice Recording + Whisper Integration with Pause/Stop + Circle Colors
+            let mediaRecorder;
+            let audioChunks = [];
+            let isPaused = false;
+
+            const recordBtn = document.getElementById('recordBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const animatedCircle = document.getElementById('animatedCircle');
+            const recordHint = document.getElementById('recordHint');
+            const aiFeedback = document.getElementById('aiFeedback');
+
+            // 🟢 Start as "ready"
+            animatedCircle.classList.add('ready');
+
+            recordBtn.addEventListener('click', async () => {
+                if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => {
+                        audioChunks.push(e.data);
+                    };
+
+                    // 🔴 Recording started
+                    mediaRecorder.onstart = () => {
+                        animatedCircle.classList.remove('ready', 'paused');
+                        animatedCircle.classList.add('recording');
+                    };
+
+                    // 🟡 Paused
+                    mediaRecorder.onpause = () => {
+                        recordHint.textContent = "Recording paused.";
+                        pauseBtn.textContent = "▶️ Resume";
+                        isPaused = true;
+                        animatedCircle.classList.remove('recording');
+                        animatedCircle.classList.add('paused');
+                    };
+
+                    // 🔴 Resumed
+                    mediaRecorder.onresume = () => {
+                        recordHint.textContent = "Recording resumed. Speak now!";
+                        pauseBtn.textContent = "⏸ Pause";
+                        isPaused = false;
+                        animatedCircle.classList.remove('paused');
+                        animatedCircle.classList.add('recording');
+                    };
+
+                    // 🟢 Stopped
+                    mediaRecorder.onstop = async () => {
+                        recordHint.textContent = "Processing your answer...";
+                        aiFeedback.textContent = "Transcribing your answer...";
+                        animatedCircle.classList.remove('recording', 'paused');
+                        animatedCircle.classList.add('ready');
+
+                        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                        const formData = new FormData();
+                        formData.append("audio", audioBlob, "answer.webm");
+
+                        const whisperRes = await fetch("http://127.0.0.1:5000/record", {
+                            method: "POST",
+                            body: formData,
+                        });
+
+                        const whisperData = await whisperRes.json();
+                        const transcribedAnswer = whisperData.text;
+
+                        recordHint.textContent = "Getting feedback...";
+                        aiFeedback.textContent = "Analyzing your response...";
+
+                        const feedbackRes = await fetch("http://127.0.0.1:5000/api/generate_feedback", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                answer: transcribedAnswer,
+                                question: currentQuestion,
+                                role: role,
+                            }),
+                        });
+
+                        const feedbackData = await feedbackRes.json();
+                        aiFeedback.textContent = feedbackData.feedback || "Error generating feedback.";
+
+                        // Reset UI
+                        recordBtn.disabled = false;
+                        pauseBtn.disabled = true;
+                        stopBtn.disabled = true;
+                        recordBtn.textContent = "🎙️ Start Recording";
+                    };
+
+                    mediaRecorder.start();
+                    recordBtn.disabled = true;
+                    pauseBtn.disabled = false;
+                    stopBtn.disabled = false;
+                    recordHint.textContent = "Recording... Speak now!";
+                    aiFeedback.textContent = "Listening...";
+                }
+            });
+
+            pauseBtn.addEventListener('click', () => {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    mediaRecorder.pause();
+                } else if (mediaRecorder && mediaRecorder.state === "paused") {
+                    mediaRecorder.resume();
+                }
+            });
+
+            stopBtn.addEventListener('click', () => {
+                if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    mediaRecorder.stop();
+                }
+            });
         });
     </script>
 </body>

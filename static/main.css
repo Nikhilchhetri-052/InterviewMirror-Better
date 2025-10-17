@@ -698,6 +698,25 @@ h4 {
     color: var(--light-text);
     font-size: 0.95em;
 }
+/* Recording Controls */
+.record-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.pause-btn, .stop-btn {
+    padding: 14px 30px;
+    font-size: 1.1em;
+}
+
+.pause-btn:disabled,
+.stop-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 .feedback-section {
     margin-top: 40px;
@@ -951,6 +970,37 @@ h4 {
 
 .animated-circle.pulsing {
     animation: enhancedPulse 2s infinite ease-in-out;
+}
+/* --- Recording State Colors --- */
+.animated-circle.ready {
+    background: linear-gradient(135deg, #10B981, #047857); /* Green */
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+}
+
+.animated-circle.recording {
+    background: linear-gradient(135deg, #DC2626, #B91C1C); /* Red */
+    animation: pulseRecording 1.2s infinite ease-in-out;
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.7);
+}
+
+.animated-circle.paused {
+    background: linear-gradient(135deg, #F59E0B, #D97706); /* Yellow */
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+}
+
+@keyframes pulseRecording {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.9);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
 }
 
 @keyframes enhancedPulse {
