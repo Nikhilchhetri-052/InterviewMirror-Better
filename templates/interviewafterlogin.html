@@ -238,37 +238,81 @@
         }
         document.addEventListener('DOMContentLoaded', async () => {
             const interviewSection = document.getElementById('interviewSection');
+            const interviewRoleElement = document.getElementById('interviewRole');
             const summarySection = document.getElementById('summarySection');
             const userIdDisplay = document.querySelector('.user-id-display');
             const currentUserId = window.getUserId();
+            const playVoiceBtn = document.getElementById('playVoiceBtn');
+            const aiVoiceStatus = document.getElementById('aiVoiceStatus');
+            const questionTextElement = document.getElementById('questionText');
             
             // Show user ID
             userIdDisplay.textContent = `User ID: ${currentUserId || 'Not logged in'}`;
             const role = "{{ role }}";
+            
+            if (role) {
+                interviewRoleElement.textContent = `${window.capitalizeFirstLetter(role)} Interview`;
+            } else {
+                interviewRoleElement.textContent = 'General Interview';
+            }
 
-            // === SIMULATION OF INTERVIEW PROGRESS ===
-            // Replace with your actual interview logic
-            let currentQuestion = 1;
-            const totalQuestions = 5;
-
-            const nextQuestion = () => {
-                if (currentQuestion <= totalQuestions) {
-                    document.querySelector('.question-count').textContent = `Question ${currentQuestion} of ${totalQuestions}`;
-                    document.getElementById('questionText').textContent = `This is question ${currentQuestion}?`;
-                    currentQuestion++;
-                } else {
-                    // Interview completed
-                    interviewSection.style.display = 'none';
-                    summarySection.style.display = 'block';
-                    loadLatestSummary();
-                }
+            const questions = {
+                frontend: "Tell me about a challenging frontend project you've worked on and how you overcame obstacles.",
+                backend: "Explain the concept of RESTful APIs and how you've used them in your projects.",
+                devops: "Describe your experience with CI/CD pipelines and tools like Jenkins or GitLab CI.",
+                fullstack: "How do you approach designing a scalable web application from both frontend and backend perspectives?",
+                qa: "What's your approach to testing a new feature, from unit tests to end-to-end tests?",
+                datascience: "Walk me through a data science project you're proud of, focusing on your methodology.",
+                productmanager: "How do you prioritize features for a new product, and what frameworks do you use?"
             };
 
-            ///document.getElementById('recordAnswerBtn').addEventListener('click', () => {
-                // Here record answer logic...
-                // For demo, move to next question immediately
-                ///nextQuestion();
-            ///});
+            const currentQuestion = questions[role] || "Tell me about yourself and your career aspirations.";
+            questionTextElement.textContent = currentQuestion;
+
+            function startPulseAnimation() {
+                animatedCircle.classList.add('pulsing');
+                aiVoiceStatus.textContent = 'Speaking...';
+            }
+            function stopPulseAnimation() {
+                animatedCircle.classList.remove('pulsing');
+                aiVoiceStatus.textContent = 'Ready.';
+            }
+
+            //
+            playVoiceBtn.addEventListener('click', async () => {
+                const text = document.getElementById('questionText').textContent;
+                aiVoiceStatus.textContent = "Speaking...";
+                playVoiceBtn.disabled = true;
+
+                try {
+                    const response = await fetch("http://localhost:5000/speak", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: text })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Error fetching TTS audio");
+                    }
+
+                    // Convert to Blob and play audio
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+
+                    // When playback ends
+                    audio.onended = () => {
+                        aiVoiceStatus.textContent = "Ready";
+                        playVoiceBtn.disabled = false;
+                    };
+
+                } catch (err) {
+                    console.error("TTS Error:", err);
+                    aiVoiceStatus.textContent = "Error playing voice.";
+                    playVoiceBtn.disabled = false;
+                }
+            });
 
             // === FUNCTION TO LOAD LATEST INTERVIEW SUMMARY ===
             async function loadLatestSummary() {

@@ -149,13 +149,39 @@
                 aiVoiceStatus.textContent = 'Ready.';
             }
 
-            playVoiceBtn.addEventListener('click', () => {
+            playVoiceBtn.addEventListener('click', async () => {
+                const text = document.getElementById('questionText').textContent;
+                aiVoiceStatus.textContent = "Speaking...";
                 playVoiceBtn.disabled = true;
-                startPulseAnimation();
-                setTimeout(() => {
-                    stopPulseAnimation();
+
+                try {
+                    const response = await fetch("http://localhost:5000/speak", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Error fetching TTS audio");
+                    }
+
+                    // Convert to Blob and play audio
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+
+                    // When playback ends
+                    audio.onended = () => {
+                        aiVoiceStatus.textContent = "Ready";
+                        playVoiceBtn.disabled = false;
+                    };
+
+                } catch (err) {
+                    console.error("TTS Error:", err);
+                    aiVoiceStatus.textContent = "Error playing voice.";
                     playVoiceBtn.disabled = false;
-                }, 3000);
+                }
             });
 
             // 🎤 Voice Recording + Whisper Integration with Pause/Stop + Circle Colors
