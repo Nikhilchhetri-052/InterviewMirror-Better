@@ -17,10 +17,10 @@ from datetime import datetime
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/InterviewMirror" #for deploy app.config["MONGO_URI"] = "mongodb+srv://Raunak:gemsschool123@cluster0.yeh8tgu.mongodb.net/InterviewMirror" #"mongodb://localhost:27017/InterviewMirror"
+app.config["MONGO_URI"] = "mongodb://localhost:27017/InterviewMirror"
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 mongo = PyMongo(app)
-app.secret_key = "9b1c8c49d3c3e7e456f7ab97d8332a19"
+app.secret_key = SECRET_KEY
 bcrypt = Bcrypt(app)
 users_collection = mongo.db.users
 jobs_collection = mongo.db.jobs
@@ -444,3 +444,4 @@ def upload_resume():
 if __name__ == '__main__':
     
     app.run(debug=True)
+
