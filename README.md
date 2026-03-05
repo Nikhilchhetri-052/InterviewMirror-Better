@@ -115,5 +115,5 @@ Default local URL:
 3. Run local validation before opening a PR.
 4. Submit a PR with a clear summary of behavior changes.
 
-## License
-No license file is currently included. Add a `LICENSE` file to define usage and distribution terms.
+
+
