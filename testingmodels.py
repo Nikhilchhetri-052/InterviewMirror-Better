@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # -------------------------------------------------------
 # PATHS
 # -------------------------------------------------------
-QGEN_MODEL_PATH = "./interview_models/qgen_flan_t5"
+QGEN_MODEL_PATH = "./interview_models/qgen_flan_t5_base"
 EVAL_MODEL_PATH = "./interview_models/interview_eval_model"
 
 # Optional persistent memory
@@ -193,7 +193,7 @@ def generate_question(role, difficulty, max_tries=10):
             )
 
         question = tokenizer_q.decode(output[0], skip_special_tokens=True).strip()
-        print("RAW QGEN OUTPUT:", question)
+
 
         norm = normalize_question(question)
         if norm in asked_questions or is_bad_question(question):
@@ -267,7 +267,7 @@ def evaluate_answer(role, question, answer):
         )
 
     text = tokenizer_e.decode(output[0], skip_special_tokens=True)
-    print("RAW EVAL OUTPUT:", text)
+
     try:
         return safe_json_parse(text)
     except Exception:
@@ -328,9 +328,8 @@ def generate_followup(role, question, answer):
 # INTERVIEW LOOP
 # -------------------------------------------------------
 def run_interview(role, difficulty):
-
+    
     print("\nINTERVIEW START\n")
-
     question = generate_question(role, difficulty)
     print("Question:")
     print(question)
@@ -348,8 +347,9 @@ def run_interview(role, difficulty):
     print("\nINTERVIEW STEP COMPLETE\n")
 
 # -------------------------------------------------------
-# RUN
+# RUN (manual test only)
 # -------------------------------------------------------
-load_memory()   
-run_interview(role="Fullstack Developer", difficulty="easy")
-save_memory()  
+if __name__ == "__main__":
+    load_memory()
+    run_interview(role="Product Manager", difficulty="easy")
+    save_memory()
