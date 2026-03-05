@@ -97,7 +97,6 @@
 
     <script type="module" src="{{ url_for('static', filename='scripts/main.js') }}"></script>
     <script type="module">
-        // Define capitalizeFirstLetter globally if missing
         if (typeof window.capitalizeFirstLetter !== "function") {
             window.capitalizeFirstLetter = function (str) {
                 if (!str) return "";
@@ -111,43 +110,62 @@
                 }
             }
             const params = new URLSearchParams(window.location.search);
-            const role = params.get('role');
+            const role = params.get('role') || 'general';
+
             const interviewRoleElement = document.getElementById('interviewRole');
             const questionTextElement = document.getElementById('questionText');
             const animatedCircle = document.getElementById('animatedCircle');
             const playVoiceBtn = document.getElementById('playVoiceBtn');
-            const recordAnswerBtn = document.getElementById('recordAnswerBtn');
             const aiFeedback = document.getElementById('aiFeedback');
             const aiVoiceStatus = document.getElementById('aiVoiceStatus');
             const recordHint = document.getElementById('recordHint');
+            const questionCountEl = document.querySelector('.question-count');
 
-            if (role) {
-                interviewRoleElement.textContent = `${window.capitalizeFirstLetter(role)} Interview`;
-            } else {
-                interviewRoleElement.textContent = 'General Interview';
+            interviewRoleElement.textContent = `${window.capitalizeFirstLetter(role)} Interview`;
+
+            let interviewId = null;
+            let currentQuestion = "";
+            let currentMode = "main";
+            let currentIndex = 1;
+            let totalQuestions = 5;
+
+            function updateQuestionCount() {
+                if (currentMode === "followup") {
+                    questionCountEl.textContent = `Follow-up to Question ${currentIndex} of ${totalQuestions}`;
+                } else {
+                    questionCountEl.textContent = `Question ${currentIndex} of ${totalQuestions}`;
+                }
             }
 
-            const questions = {
-                frontend: "Tell me about a challenging frontend project you've worked on and how you overcame obstacles.",
-                backend: "Explain the concept of RESTful APIs and how you've used them in your projects.",
-                devops: "Describe your experience with CI/CD pipelines and tools like Jenkins or GitLab CI.",
-                fullstack: "How do you approach designing a scalable web application from both frontend and backend perspectives?",
-                qa: "What's your approach to testing a new feature, from unit tests to end-to-end tests?",
-                datascience: "Walk me through a data science project you're proud of, focusing on your methodology.",
-                productmanager: "How do you prioritize features for a new product, and what frameworks do you use?"
-            };
-
-            const currentQuestion = questions[role] || "Tell me about yourself and your career aspirations.";
-            questionTextElement.textContent = currentQuestion;
-
-            function startPulseAnimation() {
-                animatedCircle.classList.add('pulsing');
-                aiVoiceStatus.textContent = 'Speaking...';
+            function formatEvaluation(evaluation) {
+                if (!evaluation) return "No feedback available.";
+                const scores = evaluation.scores || {};
+                return (
+                    `Feedback: ${evaluation.feedback || "No feedback."}\n` +
+                    `Scores - Technical: ${scores.technical ?? "N/A"}, ` +
+                    `Communication: ${scores.communication ?? "N/A"}, ` +
+                    `Depth: ${scores.depth ?? "N/A"}, ` +
+                    `Overall: ${evaluation.overall ?? "N/A"}`
+                );
             }
-            function stopPulseAnimation() {
-                animatedCircle.classList.remove('pulsing');
-                aiVoiceStatus.textContent = 'Ready.';
+
+            async function startInterview() {
+                const response = await fetch("/api/interview/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ role, difficulty: "medium", max_questions: 5 }),
+                });
+                const data = await response.json();
+                interviewId = data.interview_id;
+                currentQuestion = data.question;
+                currentMode = data.mode;
+                currentIndex = data.question_index;
+                totalQuestions = data.total_questions;
+                questionTextElement.textContent = currentQuestion;
+                updateQuestionCount();
             }
+
+            await startInterview();
 
             playVoiceBtn.addEventListener('click', async () => {
                 const text = document.getElementById('questionText').textContent;
@@ -155,7 +173,7 @@
                 playVoiceBtn.disabled = true;
 
                 try {
-                    const response = await fetch("http://localhost:5000/speak", {
+                    const response = await fetch("/speak", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ text })
@@ -165,13 +183,11 @@
                         throw new Error("Error fetching TTS audio");
                     }
 
-                    // Convert to Blob and play audio
                     const audioBlob = await response.blob();
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const audio = new Audio(audioUrl);
                     audio.play();
 
-                    // When playback ends
                     audio.onended = () => {
                         aiVoiceStatus.textContent = "Ready";
                         playVoiceBtn.disabled = false;
@@ -184,7 +200,6 @@
                 }
             });
 
-            // 🎤 Voice Recording + Whisper Integration with Pause/Stop + Circle Colors
             let mediaRecorder;
             let audioChunks = [];
             let isPaused = false;
@@ -192,14 +207,11 @@
             const recordBtn = document.getElementById('recordBtn');
             const pauseBtn = document.getElementById('pauseBtn');
             const stopBtn = document.getElementById('stopBtn');
-            // 🟢 Start as "ready"
             animatedCircle.classList.add('ready');
 
             recordBtn.addEventListener('click', async () => {
-                console.log("🎙️ Start Recording button clicked");
                 if (!mediaRecorder || mediaRecorder.state === "inactive") {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    console.log("✅ Microphone access granted");
                     mediaRecorder = new MediaRecorder(stream);
                     audioChunks = [];
 
@@ -207,13 +219,11 @@
                         audioChunks.push(e.data);
                     };
 
-                    // 🔴 Recording started
                     mediaRecorder.onstart = () => {
                         animatedCircle.classList.remove('ready', 'paused');
                         animatedCircle.classList.add('recording');
                     };
 
-                    // 🟡 Paused
                     mediaRecorder.onpause = () => {
                         recordHint.textContent = "Recording paused.";
                         pauseBtn.textContent = "▶️ Resume";
@@ -222,7 +232,6 @@
                         animatedCircle.classList.add('paused');
                     };
 
-                    // 🔴 Resumed
                     mediaRecorder.onresume = () => {
                         recordHint.textContent = "Recording resumed. Speak now!";
                         pauseBtn.textContent = "⏸ Pause";
@@ -231,7 +240,6 @@
                         animatedCircle.classList.add('recording');
                     };
 
-                    // 🟢 Stopped
                     mediaRecorder.onstop = async () => {
                         recordHint.textContent = "Processing your answer...";
                         aiFeedback.textContent = "Transcribing your answer...";
@@ -242,7 +250,7 @@
                         const formData = new FormData();
                         formData.append("audio", audioBlob, "answer.webm");
 
-                        const whisperRes = await fetch("http://127.0.0.1:5000/record", {
+                        const whisperRes = await fetch("/record", {
                             method: "POST",
                             body: formData,
                         });
@@ -253,20 +261,35 @@
                         recordHint.textContent = "Getting feedback...";
                         aiFeedback.textContent = "Analyzing your response...";
 
-                        const feedbackRes = await fetch("http://127.0.0.1:5000/api/generate_feedback", {
+                        const answerRes = await fetch("/api/interview/answer", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
+                                interview_id: interviewId,
                                 answer: transcribedAnswer,
-                                question: currentQuestion,
-                                role: role,
                             }),
                         });
 
-                        const feedbackData = await feedbackRes.json();
-                        aiFeedback.textContent = feedbackData.feedback || "Error generating feedback.";
+                        const answerData = await answerRes.json();
+                        aiFeedback.textContent = formatEvaluation(answerData.evaluation);
 
-                        // Reset UI
+                        if (answerData.done) {
+                            const summary = answerData.summary;
+                            questionTextElement.textContent = "Interview complete. Review your feedback below.";
+                            currentMode = "done";
+                            recordHint.textContent = summary?.summary || "Session complete.";
+                            recordBtn.disabled = true;
+                            pauseBtn.disabled = true;
+                            stopBtn.disabled = true;
+                        } else {
+                            currentQuestion = answerData.next_question;
+                            currentMode = answerData.mode;
+                            currentIndex = answerData.question_index;
+                            totalQuestions = answerData.total_questions;
+                            questionTextElement.textContent = currentQuestion;
+                            updateQuestionCount();
+                        }
+
                         recordBtn.disabled = false;
                         pauseBtn.disabled = true;
                         stopBtn.disabled = true;

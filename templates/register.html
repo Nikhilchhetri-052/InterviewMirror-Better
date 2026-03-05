@@ -7,6 +7,54 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        .role-selection-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .role-option {
+            flex: 1;
+            position: relative;
+        }
+        .role-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .role-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            text-align: center;
+        }
+        .role-card svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 0.5rem;
+            color: var(--light-text);
+            transition: color 0.3s ease;
+        }
+        .role-card span {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--dark-text);
+        }
+        .role-option input[type="radio"]:checked + .role-card {
+            border-color: var(--primary-color);
+            background-color: rgba(15, 118, 110, 0.05);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
+            transform: translateY(-2px);
+        }
+        .role-option input[type="radio"]:checked + .role-card svg {
+            color: var(--primary-color);
+        }
         .nav-icon-link {
             display: flex;
             align-items: center;
@@ -27,18 +75,18 @@
             color: var(--primary-purple);
         }
         .error-message {
-            color: red;
+            color: #dc2626;
             font-size: 0.85rem;
-            margin-top: 2px;
+            margin-top: 4px;
+            min-height: 1.2rem;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="navbar-brand"><a href="{{ url_for('index') }}" class="nav-link active">Interview Mirror</a></div>
         <ul class="navbar-links">
-            <li><a href="{{ url_for('index') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('index') }}" class="nav-link">Home</a></li>
             <li><a href="{{ url_for('about') }}" class="nav-link">About</a></li>
             <li><a href="{{ url_for('Contactus') }}" class="nav-link">Contact</a></li>
             <li class="logged-out-only"><a href="{{ url_for('register') }}" class="btn nav-btn-primary active">Sign Up</a></li>
@@ -49,30 +97,69 @@
     <main class="container form-page-container">
         <div class="form-card">
             <h2>Create Your Account</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            <p class="form-subtitle">Choose your role and start your journey</p>
+            
             <form id="registerForm" method="POST" action="{{ url_for('register') }}">
                 <div class="form-group">
+                    <label>Join as:</label>
+                    <div class="role-selection-container">
+                        <label class="role-option">
+                            <input type="radio" name="userRole" value="interviewee" checked>
+                            <div class="role-card">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span>Interviewee</span>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="userRole" value="admin">
+                            <div class="role-card">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <span>Admin</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="name">Full Name</label>
-                    <input type="text" id="name" name="username" placeholder="Enter your name" required>
+                    <input type="text" id="name" name="username" placeholder="Enter your full name">
                     <div class="error-message" id="nameError"></div>
                 </div>
+
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    <input type="email" id="email" name="email" placeholder="example@domain.com">
                     <div class="error-message" id="emailError"></div>
                 </div>
+
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <input type="password" id="password" name="password" placeholder="At least 6 characters">
                     <div class="error-message" id="passwordError"></div>
                 </div>
+
                 <div class="form-group">
                     <label for="confirmPassword">Confirm Password</label>
-                    <input type="password" id="confirmPassword" name="confirm_password" placeholder="Confirm your password" required>
+                    <input type="password" id="confirmPassword" name="confirm_password" placeholder="Repeat your password">
                     <div class="error-message" id="confirmPasswordError"></div>
                 </div>
-                <button type="submit" class="btn primary-btn full-width-btn">Register</button>
+
+                <button type="submit" class="btn primary-btn full-width-btn">Create Account</button>
             </form>
-            <p class="form-footer">Already have an account? <a href="{{ url_for('login') }}">Log In here</a></p>
+            <p class="form-footer">Already have an account? <a href="{{ url_for('login') }}" class="btn nav-btn-secondary">Log In</a></p>
         </div>
     </main>
 
@@ -81,7 +168,6 @@
         <p>&copy; 2024 Interview Mirror. All rights reserved.</p>
     </footer>
 
-    <!-- Optional: Client-side validation -->
     <script>
         document.getElementById('registerForm').addEventListener('submit', function(event) {
             let isValid = true;

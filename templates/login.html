@@ -38,7 +38,7 @@
     <nav class="navbar">
         <div class="navbar-brand"><a href="{{ url_for('index') }}" class="nav-link active">Interview Mirror</a></div>
         <ul class="navbar-links">
-            <li><a href="{{ url_for('index') }}" class="nav-link active">Home</a></li>
+            <li><a href="{{ url_for('index') }}" class="nav-link">Home</a></li>
             <li><a href="{{ url_for('about') }}" class="nav-link">About</a></li>
             <li><a href="{{ url_for('Contactus') }}" class="nav-link">Contact</a></li>
             <li class="logged-out-only"><a href="{{ url_for('register') }}" class="btn nav-btn-primary">Sign Up</a></li>
@@ -49,6 +49,15 @@
     <main class="container form-page-container">
         <div class="form-card">
             <h2>Log In to Your Account</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
             <form id="loginForm" method="POST" action="{{ url_for('login') }}">
                 <div class="form-group">
                     <label for="email">Email Address</label>

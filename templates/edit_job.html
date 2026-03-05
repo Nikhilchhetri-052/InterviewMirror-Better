@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Job - InterviewMirror</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <style>
+        .edit-form-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+        }
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        .form-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        .form-label {
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: block;
+            color: #111827;
+        }
+        .disabled-textarea {
+            opacity: 0.5;
+            background-color: #f3f4f6;
+        }
+        .helper-text-error {
+            color: #dc2626;
+        }
+        .helper-text-info {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="edit-form-container">
+            <h1 style="text-align: center; margin-bottom: 2rem; color: #111827;">Edit Job Listing</h1>
+
+            <form action="{{ url_for('edit_job', job_id=job._id) }}" method="POST">
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.9rem">Job Title</label>
+                <input type="text" name="title" class="form-input" value="{{ job.title }}" placeholder="e.g. Senior Software Engineer" required>
+
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.9rem">Company</label>
+                <input type="text" name="company" class="form-input" value="{{ job.company }}" placeholder="Your Company Name" required>
+
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.9rem">Location</label>
+                <input type="text" name="location" class="form-input" value="{{ job.location }}" placeholder="e.g. New York, NY or Remote" required>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem">
+                    <div>
+                        <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.9rem">Workplace</label>
+                        <select name="workplace" class="form-select">
+                            <option value="On-site" {% if job.workplace == 'On-site' %}selected{% endif %}>On-site</option>
+                            <option value="Hybrid" {% if job.workplace == 'Hybrid' %}selected{% endif %}>Hybrid</option>
+                            <option value="Remote" {% if job.workplace == 'Remote' %}selected{% endif %}>Remote</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.9rem">Job Type</label>
+                        <select name="job_type" class="form-select">
+                            <option value="Full-time" {% if job.job_type == 'Full-time' %}selected{% endif %}>Full-time</option>
+                            <option value="Contract" {% if job.job_type == 'Contract' %}selected{% endif %}>Contract</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.9rem">Job Description</label>
+                <textarea name="description" class="form-input" placeholder="Describe the role, requirements, and what the candidate will be doing..." style="min-height: 100px; resize: vertical;" required>{{ job.description }}</textarea>
+
+                <div class="form-section">
+                    <label class="form-label">
+                        Interview Questions
+                    </label>
+
+                    <div style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-size: 0.9rem; color: #6b7280;">
+                            <input type="radio" name="question_source" value="developer" {% if job.question_source == 'developer' or not job.question_source %}checked{% endif %}
+                                   onchange="toggleQuestionInput()"
+                                   style="margin-right: 8px; accent-color: #3b82f6;">
+                            Use curated questions (Recommended)
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-size: 0.9rem; color: #6b7280;">
+                            <input type="radio" name="question_source" value="custom" {% if job.question_source == 'custom' %}checked{% endif %}
+                                   onchange="toggleQuestionInput()"
+                                   style="margin-right: 8px; accent-color: #3b82f6;">
+                            Provide my own questions
+                        </label>
+                    </div>
+
+                    <textarea id="customQuestions" name="custom_questions"
+                              class="form-input"
+                              placeholder="Enter your interview questions here (one per line)..."
+                              style="width: 100%; min-height: 100px; resize: vertical;"
+                              data-custom-source="{{ job.question_source }}">{{ job.custom_questions or '' }}</textarea>
+
+                    <p id="helperText" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                        * Interview Mirror will use its built-in professional question bank for this role.
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn-primary">Update Job</button>
+                    <a href="{{ url_for('admin_jobs') }}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function initializeQuestionInput() {
+            const customInput = document.getElementById('customQuestions');
+            const helperText = document.getElementById('helperText');
+            const sourceValue = customInput.getAttribute('data-custom-source');
+            const isDeveloperSource = sourceValue === 'developer' || !sourceValue;
+
+            applyQuestionInputState(isDeveloperSource, customInput, helperText);
+        }
+
+        function applyQuestionInputState(isDeveloperSource, customInput, helperText) {
+            if (isDeveloperSource) {
+                customInput.disabled = true;
+                customInput.classList.add('disabled-textarea');
+                customInput.value = "";
+                helperText.textContent = "* Interview Mirror will use its built-in professional question bank for this role.";
+                helperText.classList.remove('helper-text-error');
+                helperText.classList.add('helper-text-info');
+            } else {
+                customInput.disabled = false;
+                customInput.classList.remove('disabled-textarea');
+                helperText.textContent = "* Please enter the specific questions you want candidates to answer.";
+                helperText.classList.remove('helper-text-info');
+                helperText.classList.add('helper-text-error');
+            }
+        }
+
+        function toggleQuestionInput() {
+            const customInput = document.getElementById('customQuestions');
+            const helperText = document.getElementById('helperText');
+            const isDeveloperSource = document.querySelector('input[name="question_source"]:checked').value === 'developer';
+            applyQuestionInputState(isDeveloperSource, customInput, helperText);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeQuestionInput);
+    </script>
+</body>
+</html>
