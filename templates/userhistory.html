@@ -50,14 +50,26 @@
         <section class="dashboard-section">
             <h3>Past Interview Sessions</h3>
             <div id="pastSessionsList" class="sessions-list">
-                {% if user.interview_sessions %}
-                    {% for session in user.interview_sessions %}
+                {% if interview_sessions %}
+                    {% for session in interview_sessions %}
                         <div class="session-item">
                             <h4>{{ session.role | capitalize }} Interview</h4>
-                            <p><strong>Question:</strong> {{ session.question or 'N/A' }}</p>
-                            <p><strong>Your Answer:</strong> {{ session.userAnswer or 'No answer recorded' }}</p>
-                            <p class="feedback-summary"><strong>AI Feedback:</strong> {{ session.aiFeedback or 'No feedback yet' }}</p>
-                            <p><small>Date: {{ session.timestamp or 'N/A' }}</small></p>
+                            <p><strong>Status:</strong> {{ session.status or 'completed' }}</p>
+                            <p><strong>Difficulty:</strong> {{ session.difficulty or 'N/A' }}</p>
+                            <p><strong>Questions Completed:</strong> {{ session.summary.questions_completed if session.summary else 'N/A' }}</p>
+                            <p class="feedback-summary">
+                                <strong>Summary:</strong>
+                                {{ session.summary.summary if session.summary else 'No summary available yet.' }}
+                            </p>
+                            <p><small>Completed At: {{ session.completed_at or session.last_updated_at or 'N/A' }}</small></p>
+                            {% if session.status == 'in_progress' %}
+                            <div style="margin-top: 0.75rem;">
+                                <a href="{{ url_for('interviewafterlogin', role=session.role, job_id=session.job_id, application_id=session.application_id, interview_id=session.interview_id) }}"
+                                   style="display: inline-block; padding: 0.5rem 0.85rem; border-radius: 8px; background: #0f766e; color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+                                    Continue Interview
+                                </a>
+                            </div>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 {% else %}

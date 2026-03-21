@@ -13,23 +13,41 @@ from flask_cors import CORS
 from interviewgenerate import manager, set_database_collections
 from llm_adapter import llm_service
 from datetime import datetime
+import re
 
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/InterviewMirror"
+app.config["MONGO_URI"] = "mongodb://localhost:27017/InterviewMirror" #for deploy app.config["MONGO_URI"] = "mongodb+srv://Raunak:gemsschool123@cluster0.yeh8tgu.mongodb.net/InterviewMirror" #"mongodb://localhost:27017/InterviewMirror"
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 mongo = PyMongo(app)
-app.secret_key = SECRET_KEY
+app.secret_key = "9b1c8c49d3c3e7e456f7ab97d8332a19"
 bcrypt = Bcrypt(app)
 users_collection = mongo.db.users
 jobs_collection = mongo.db.jobs
 interview_sessions_collection = mongo.db.interview_sessions
+job_applications_collection = mongo.db.job_applications
 
 # Initialize database collections in interview manager
-set_database_collections(interview_sessions_collection)
+set_database_collections(interview_sessions_collection, job_applications_collection)
 
 model = whisper.load_model("base")
+
+
+def parse_custom_questions(raw_value):
+    if not raw_value:
+        return []
+
+    if isinstance(raw_value, list):
+        return [str(item).strip() for item in raw_value if str(item).strip()]
+
+    lines = str(raw_value).splitlines()
+    questions = []
+    for line in lines:
+        cleaned = re.sub(r'^\s*(?:[-*]|\d+[\).\:-])\s*', '', line).strip()
+        if cleaned:
+            questions.append(cleaned)
+    return questions
 
     
 @app.context_processor
@@ -153,7 +171,13 @@ def Contactafterlogin():
 
 @app.route('/job_apply')
 def job_apply():
-    return render_template('job_apply.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    jobs = list(jobs_collection.find({"active": True}).sort("created_at", -1))
+    for job in jobs:
+        job['_id'] = str(job['_id'])
+    return render_template('job_apply.html', jobs=jobs)
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
@@ -178,21 +202,191 @@ def admin_setting():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('homepageafterlogin'))
     
-    # Get all candidates and their interview data
-    candidates = list(users_collection.find({"role": {"$ne": "admin"}}))
-    for candidate in candidates:
-        candidate['_id'] = str(candidate['_id'])
-        # Get interview sessions for this candidate
-        sessions = list(interview_sessions_collection.find({"user_id": candidate.get('user_id')}))
-        candidate['interview_sessions'] = sessions
-    
     # Get all jobs posted by this admin
     admin_user_id = session.get('custom_user_id')
     admin_jobs = list(jobs_collection.find({"created_by": admin_user_id}).sort("created_at", -1))
     for job in admin_jobs:
         job['_id'] = str(job['_id'])
+
+    # Show candidates who applied to this admin's jobs and have at least one completed interview
+    admin_job_ids = [job['_id'] for job in admin_jobs]
+    admin_applications = list(
+        job_applications_collection.find({"created_by": admin_user_id}).sort("applied_at", -1)
+    )
+
+    candidates_by_user = {}
+    for application in admin_applications:
+        candidate_user_id = application.get("candidate_user_id")
+        if not candidate_user_id:
+            continue
+
+        if candidate_user_id not in candidates_by_user:
+            user_doc = users_collection.find_one(
+                {"user_id": candidate_user_id, "role": {"$ne": "admin"}}
+            )
+            if not user_doc:
+                continue
+            user_doc['_id'] = str(user_doc['_id'])
+            user_doc['interview_sessions'] = []
+            user_doc['applications'] = []
+            candidates_by_user[candidate_user_id] = user_doc
+
+        app_id = application.get("_id")
+        all_app_sessions = []
+        if app_id is not None:
+            all_app_sessions = list(
+                interview_sessions_collection.find({"application_id": str(app_id)}).sort("last_updated_at", -1)
+            )
+        if not all_app_sessions and application.get("latest_interview_id"):
+            all_app_sessions = list(
+                interview_sessions_collection.find(
+                    {"interview_id": application.get("latest_interview_id")}
+                )
+            )
+
+        completed_sessions = [session_doc for session_doc in all_app_sessions if session_doc.get("status") == "completed"]
+        if not completed_sessions:
+            continue
+
+        for session_doc in completed_sessions:
+            session_doc['_id'] = str(session_doc['_id'])
+            candidates_by_user[candidate_user_id]['interview_sessions'].append(session_doc)
+
+        candidates_by_user[candidate_user_id]['applications'].append(
+            {
+                "job_title": application.get("job_title", "Unknown Job"),
+                "job_company": application.get("job_company", ""),
+                "status": application.get("interview_status", "unknown"),
+                "applied_at": application.get("applied_at"),
+                "interview_completed_at": application.get("interview_completed_at"),
+            }
+        )
+
+    # Backward compatibility: include completed sessions tied directly to admin job ids
+    if admin_job_ids:
+        legacy_sessions = list(
+            interview_sessions_collection.find(
+                {"job_id": {"$in": admin_job_ids}, "status": "completed"}
+            ).sort("completed_at", -1)
+        )
+        for session_doc in legacy_sessions:
+            candidate_user_id = session_doc.get("user_id")
+            if not candidate_user_id:
+                continue
+
+            if candidate_user_id not in candidates_by_user:
+                user_doc = users_collection.find_one(
+                    {"user_id": candidate_user_id, "role": {"$ne": "admin"}}
+                )
+                if not user_doc:
+                    continue
+                user_doc['_id'] = str(user_doc['_id'])
+                user_doc['interview_sessions'] = []
+                user_doc['applications'] = []
+                candidates_by_user[candidate_user_id] = user_doc
+
+            if any(existing.get("interview_id") == session_doc.get("interview_id") for existing in candidates_by_user[candidate_user_id]['interview_sessions']):
+                continue
+
+            session_doc['_id'] = str(session_doc['_id'])
+            candidates_by_user[candidate_user_id]['interview_sessions'].append(session_doc)
+
+    def session_sort_key(session_doc):
+        return (
+            session_doc.get("completed_at")
+            or session_doc.get("last_updated_at")
+            or session_doc.get("created_at")
+            or ""
+        )
+
+    for candidate in candidates_by_user.values():
+        sessions = candidate.get("interview_sessions", [])
+        if not sessions:
+            continue
+
+        sessions.sort(key=session_sort_key, reverse=True)
+        latest_session = sessions[0]
+        latest_summary = latest_session.get("summary") or {}
+        average_scores = latest_summary.get("average_scores") or {}
+        overall_score = float(average_scores.get("overall", 0) or 0)
+
+        if overall_score >= 4.0:
+            recommendation = "Strongly Recommended"
+        elif overall_score >= 3.0:
+            recommendation = "Recommended"
+        elif overall_score >= 2.0:
+            recommendation = "Needs Review"
+        else:
+            recommendation = "Not Recommended"
+
+        candidate["latest_performance"] = {
+            "overall": round(overall_score, 2),
+            "technical": average_scores.get("technical", "N/A"),
+            "communication": average_scores.get("communication", "N/A"),
+            "depth": average_scores.get("depth", "N/A"),
+            "questions_completed": latest_summary.get("questions_completed", 0),
+            "total_questions": latest_summary.get("total_questions", 0),
+            "summary_text": latest_summary.get("summary", "No summary available."),
+            "recommendation": recommendation,
+            "completed_at": latest_session.get("completed_at") or latest_session.get("last_updated_at"),
+            "role": latest_session.get("role") or latest_summary.get("role"),
+        }
+
+    candidates = list(candidates_by_user.values())
     
     return render_template('admin_setting.html', candidates=candidates, jobs=admin_jobs)
+
+@app.route('/api/job/apply', methods=['POST'])
+def apply_for_job():
+    if 'user_id' not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    data = request.get_json() or {}
+    job_id = data.get("job_id")
+    if not job_id:
+        return jsonify({"error": "Missing job_id"}), 400
+
+    try:
+        job = jobs_collection.find_one({"_id": ObjectId(job_id), "active": True})
+    except Exception:
+        return jsonify({"error": "Invalid job_id"}), 400
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    application_filter = {
+        "job_id": job_id,
+        "candidate_user_id": session.get("custom_user_id"),
+    }
+    existing_application = job_applications_collection.find_one(application_filter)
+
+    if existing_application:
+        application_id = str(existing_application["_id"])
+    else:
+        application = {
+            "job_id": job_id,
+            "job_title": job.get("title"),
+            "job_company": job.get("company"),
+            "job_role": job.get("title") or job.get("job_type") or "general",
+            "created_by": job.get("created_by"),
+            "candidate_user_id": session.get("custom_user_id"),
+            "candidate_username": session.get("username"),
+            "applied_at": datetime.utcnow().isoformat(),
+            "interview_status": "not_started",
+            "interview_started_at": None,
+            "interview_completed_at": None,
+            "latest_interview_id": None,
+        }
+        result = job_applications_collection.insert_one(application)
+        application_id = str(result.inserted_id)
+
+    redirect_url = url_for(
+        'interviewafterlogin',
+        role=(job.get("title") or job.get("job_type") or "general"),
+        job_id=job_id,
+        application_id=application_id,
+    )
+    return jsonify({"success": True, "application_id": application_id, "redirect_url": redirect_url})
 
 # Job Management Routes
 @app.route('/admin/jobs', methods=['GET', 'POST'])
@@ -210,8 +404,13 @@ def admin_jobs():
         workplace = request.form.get('workplace')
         job_type = request.form.get('job_type')
         description = request.form.get('description')
-        question_source = request.form.get('question_source')
+        question_source = request.form.get('question_source', 'developer')
         custom_questions = request.form.get('custom_questions')
+        parsed_custom_questions = parse_custom_questions(custom_questions)
+
+        if question_source == 'custom' and not parsed_custom_questions:
+            flash('Please provide at least one custom question when custom source is selected.', 'danger')
+            return redirect(url_for('admin_jobs'))
         
         job = {
             "title": title,
@@ -221,7 +420,7 @@ def admin_jobs():
             "job_type": job_type,
             "description": description,
             "question_source": question_source,
-            "custom_questions": custom_questions,
+            "custom_questions": "\n".join(parsed_custom_questions),
             "created_by": session.get('custom_user_id'),
             "created_at": datetime.utcnow(),
             "active": True
@@ -251,6 +450,13 @@ def edit_job(job_id):
         return redirect(url_for('admin_jobs'))
     
     if request.method == 'POST':
+        question_source = request.form.get('question_source', 'developer')
+        custom_questions = request.form.get('custom_questions')
+        parsed_custom_questions = parse_custom_questions(custom_questions)
+        if question_source == 'custom' and not parsed_custom_questions:
+            flash('Please provide at least one custom question when custom source is selected.', 'danger')
+            return redirect(url_for('edit_job', job_id=job_id))
+
         update_data = {
             "title": request.form.get('title'),
             "company": request.form.get('company'),
@@ -258,8 +464,8 @@ def edit_job(job_id):
             "workplace": request.form.get('workplace'),
             "job_type": request.form.get('job_type'),
             "description": request.form.get('description'),
-            "question_source": request.form.get('question_source'),
-            "custom_questions": request.form.get('custom_questions'),
+            "question_source": question_source,
+            "custom_questions": "\n".join(parsed_custom_questions),
         }
         
         jobs_collection.update_one({"_id": ObjectId(job_id)}, {"$set": update_data})
@@ -299,8 +505,13 @@ def userhistory():
 
     user_id = ObjectId(session['user_id'])
     user = users_collection.find_one({"_id": user_id})
+    interview_sessions = list(
+        interview_sessions_collection.find({"user_id": session.get('custom_user_id')}).sort("last_updated_at", -1)
+    )
+    for interview_session in interview_sessions:
+        interview_session['_id'] = str(interview_session['_id'])
 
-    return render_template('userhistory.html', user=user)
+    return render_template('userhistory.html', user=user, interview_sessions=interview_sessions)
 
 @app.route('/record', methods=['POST'])
 def record():
@@ -344,6 +555,10 @@ def interview_start():
     data = request.get_json() or {}
     role = data.get("role", "general")
     difficulty = data.get("difficulty", "medium")
+    job_id = data.get("job_id")
+    application_id = data.get("application_id")
+    interview_id = data.get("interview_id")
+    custom_questions = []
     try:
         max_questions = int(data.get("max_questions", 5))
     except (TypeError, ValueError):
@@ -352,7 +567,37 @@ def interview_start():
     # Get user_id if logged in
     user_id = session.get('custom_user_id') if 'custom_user_id' in session else None
 
-    session_obj = manager.start_session(role=role, difficulty=difficulty, max_questions=max_questions, user_id=user_id)
+    if application_id:
+        try:
+            application_doc = job_applications_collection.find_one({"_id": ObjectId(application_id)})
+        except Exception:
+            application_doc = None
+        if application_doc:
+            job_id = application_doc.get("job_id", job_id)
+
+    job_doc = None
+    if job_id:
+        try:
+            job_doc = jobs_collection.find_one({"_id": ObjectId(job_id)})
+        except Exception:
+            job_doc = None
+
+    if job_doc:
+        if not data.get("role"):
+            role = job_doc.get("title") or role
+        if job_doc.get("question_source") == "custom":
+            custom_questions = parse_custom_questions(job_doc.get("custom_questions"))
+
+    session_obj = manager.start_session(
+        role=role,
+        difficulty=difficulty,
+        max_questions=max_questions,
+        user_id=user_id,
+        job_id=job_id,
+        application_id=application_id,
+        custom_questions=custom_questions,
+        resume_interview_id=interview_id,
+    )
 
     return jsonify(
         {
@@ -444,4 +689,3 @@ def upload_resume():
 if __name__ == '__main__':
     
     app.run(debug=True)
-

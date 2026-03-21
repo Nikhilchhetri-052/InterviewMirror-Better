@@ -180,10 +180,27 @@
             </section>
 
             <section class="answer-section">
+                <div style="display: flex; gap: 1.5rem; margin-bottom: 0.75rem;">
+                    <label style="display: flex; align-items: center; gap: 0.4rem;">
+                        <input type="radio" name="answerMode" value="audio" checked>
+                        Audio
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.4rem;">
+                        <input type="radio" name="answerMode" value="text">
+                        Text / Code
+                    </label>
+                </div>
                 <div class="record-controls">
                     <button id="recordBtn" class="btn primary-btn record-btn">🎙️ Start Recording</button>
                     <button id="pauseBtn" class="btn secondary-btn pause-btn" disabled>⏸ Pause</button>
                     <button id="stopBtn" class="btn secondary-btn stop-btn" disabled>⏹ Stop</button>
+                </div>
+                <div id="textAnswerContainer" style="display:none; margin-top: 0.75rem;">
+                    <textarea id="textAnswerInput"
+                              class="form-input"
+                              placeholder="Write your answer here. You can paste pseudocode or code."
+                              style="width: 100%; min-height: 180px; resize: vertical; font-family: Consolas, 'Courier New', monospace;"></textarea>
+                    <button id="submitTextAnswerBtn" class="btn primary-btn" style="margin-top: 0.5rem;">Submit Text Answer</button>
                 </div>
                 <p class="record-hint" id="recordHint">Click "Start Recording" to begin speaking.</p>
             </section>
@@ -191,12 +208,12 @@
             <section class="feedback-section">
                 <h2>Feedback</h2>
                 <div id="aiFeedback" class="feedback-box">
-                    Your feedback will appear here after you record your answer.
+                    Your feedback will appear here after you submit your answer.
                 </div>
             </section>
 
             <div class="bottom-nav">
-                <a href="{{ url_for('index') }}" class="btn secondary-btn">Back to Home</a>
+                <a href="{{ url_for('homepageafterlogin') }}" class="btn secondary-btn">Back to Home</a>
             </div>
         </section>
 
@@ -240,6 +257,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(window.location.search);
             const role = params.get('role') || 'general';
+            const jobId = params.get('job_id');
+            const applicationId = params.get('application_id');
+            const interviewIdFromQuery = params.get('interview_id');
 
             const interviewRoleElement = document.getElementById('interviewRole');
             const questionTextElement = document.getElementById('questionText');
@@ -249,6 +269,10 @@
             const aiVoiceStatus = document.getElementById('aiVoiceStatus');
             const recordHint = document.getElementById('recordHint');
             const questionCountEl = document.querySelector('.question-count');
+            const textAnswerContainer = document.getElementById('textAnswerContainer');
+            const textAnswerInput = document.getElementById('textAnswerInput');
+            const submitTextAnswerBtn = document.getElementById('submitTextAnswerBtn');
+            const answerModeInputs = document.querySelectorAll('input[name="answerMode"]');
 
             interviewRoleElement.textContent = `${window.capitalizeFirstLetter(role)} Interview`;
 
@@ -277,12 +301,90 @@
                     `Overall: ${evaluation.overall ?? "N/A"}`
                 );
             }
+            function formatOverallSummary(summary) {
+                if (!summary) return "";
+                const avg = summary.average_scores || {};
+                const summaryText = summary.summary || "Overall feedback not available.";
+                return (
+                    `Overall so far: ${summaryText}\n` +
+                    `Average Scores - Technical: ${avg.technical ?? "N/A"}, ` +
+                    `Communication: ${avg.communication ?? "N/A"}, ` +
+                    `Depth: ${avg.depth ?? "N/A"}, ` +
+                    `Overall: ${avg.overall ?? "N/A"}`
+                );
+            }
+
+            async function handleAnswerSubmission(rawAnswer) {
+                const answer = (rawAnswer || "").trim();
+                if (!answer) {
+                    aiFeedback.textContent = "Please provide an answer before submitting.";
+                    return;
+                }
+
+                recordHint.textContent = "Getting feedback...";
+                aiFeedback.textContent = "Analyzing your response...";
+
+                const answerRes = await fetch("/api/interview/answer", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        interview_id: interviewId,
+                        answer,
+                    }),
+                });
+
+                const answerData = await answerRes.json();
+                const overallSummary = answerData.done ? answerData.summary : answerData.overall_summary;
+                const evaluationText = formatEvaluation(answerData.evaluation);
+                const overallText = formatOverallSummary(overallSummary);
+                aiFeedback.textContent = overallText
+                    ? `${evaluationText}\n\n${overallText}`
+                    : evaluationText;
+
+                if (answerData.done) {
+                    const summary = answerData.summary;
+                    questionTextElement.textContent = "Interview complete. Review your feedback below.";
+                    currentMode = "done";
+                    recordHint.textContent = summary?.summary || "Session complete.";
+                    recordBtn.disabled = true;
+                    pauseBtn.disabled = true;
+                    stopBtn.disabled = true;
+                    submitTextAnswerBtn.disabled = true;
+                    textAnswerInput.disabled = true;
+                    return;
+                }
+
+                currentQuestion = answerData.next_question;
+                currentMode = answerData.mode;
+                currentIndex = answerData.question_index;
+                totalQuestions = answerData.total_questions;
+                questionTextElement.textContent = currentQuestion;
+                updateQuestionCount();
+                textAnswerInput.value = "";
+            }
+
+            function setAnswerMode(mode) {
+                const isAudio = mode === "audio";
+                const audioControls = document.querySelector('.record-controls');
+                audioControls.style.display = isAudio ? 'flex' : 'none';
+                textAnswerContainer.style.display = isAudio ? 'none' : 'block';
+                recordHint.textContent = isAudio
+                    ? 'Click "Start Recording" to begin speaking.'
+                    : 'Type your answer (code/pseudocode allowed), then click "Submit Text Answer".';
+            }
 
             async function startInterview() {
                 const response = await fetch("/api/interview/start", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ role, difficulty: "medium", max_questions: 5 }),
+                    body: JSON.stringify({
+                        role,
+                        difficulty: "medium",
+                        max_questions: 5,
+                        job_id: jobId,
+                        application_id: applicationId,
+                        interview_id: interviewIdFromQuery,
+                    }),
                 });
                 const data = await response.json();
                 interviewId = data.interview_id;
@@ -355,7 +457,21 @@
             const recordBtn = document.getElementById('recordBtn');
             const pauseBtn = document.getElementById('pauseBtn');
             const stopBtn = document.getElementById('stopBtn');
-            
+
+            answerModeInputs.forEach((input) => {
+                input.addEventListener('change', () => {
+                    if (mediaRecorder && (mediaRecorder.state === "recording" || mediaRecorder.state === "paused")) {
+                        input.checked = false;
+                        const activeInput = document.querySelector('input[name="answerMode"][value="audio"]');
+                        if (activeInput) activeInput.checked = true;
+                        recordHint.textContent = "Stop the current recording before switching mode.";
+                        return;
+                    }
+                    setAnswerMode(input.value);
+                });
+            });
+            setAnswerMode("audio");
+
             // 🟢 Start as "ready"
             animatedCircle.classList.add('ready');
 
@@ -412,42 +528,14 @@
                         const whisperData = await whisperRes.json();
                         const transcribedAnswer = whisperData.text;
 
-                        recordHint.textContent = "Getting feedback...";
-                        aiFeedback.textContent = "Analyzing your response...";
+                        await handleAnswerSubmission(transcribedAnswer);
 
-                        const answerRes = await fetch("/api/interview/answer", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                interview_id: interviewId,
-                                answer: transcribedAnswer,
-                            }),
-                        });
-
-                        const answerData = await answerRes.json();
-                        aiFeedback.textContent = formatEvaluation(answerData.evaluation);
-
-                        if (answerData.done) {
-                            const summary = answerData.summary;
-                            questionTextElement.textContent = "Interview complete. Review your feedback below.";
-                            currentMode = "done";
-                            recordHint.textContent = summary?.summary || "Session complete.";
-                            recordBtn.disabled = true;
+                        if (currentMode !== "done") {
+                            recordBtn.disabled = false;
                             pauseBtn.disabled = true;
                             stopBtn.disabled = true;
-                        } else {
-                            currentQuestion = answerData.next_question;
-                            currentMode = answerData.mode;
-                            currentIndex = answerData.question_index;
-                            totalQuestions = answerData.total_questions;
-                            questionTextElement.textContent = currentQuestion;
-                            updateQuestionCount();
+                            recordBtn.textContent = "🎙️ Start Recording";
                         }
-
-                        recordBtn.disabled = false;
-                        pauseBtn.disabled = true;
-                        stopBtn.disabled = true;
-                        recordBtn.textContent = "🎙️ Start Recording";
                     };
 
                     mediaRecorder.start();
@@ -470,6 +558,17 @@
             stopBtn.addEventListener('click', () => {
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
                     mediaRecorder.stop();
+                }
+            });
+
+            submitTextAnswerBtn.addEventListener('click', async () => {
+                submitTextAnswerBtn.disabled = true;
+                try {
+                    await handleAnswerSubmission(textAnswerInput.value);
+                } finally {
+                    if (!submitTextAnswerBtn.disabled || !textAnswerInput.disabled) {
+                        submitTextAnswerBtn.disabled = false;
+                    }
                 }
             });
         });

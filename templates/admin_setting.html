@@ -208,6 +208,44 @@
                             <div style="font-size: 0.9rem; color: #6b7280;">
                                 <strong>Interviews:</strong> {{ candidate.interview_sessions|length }} completed
                             </div>
+                            {% if candidate.latest_performance %}
+                            <div style="margin-top: 0.75rem; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                                    <div style="font-size: 0.9rem; color: #111827;">
+                                        <strong>Latest Role:</strong> {{ candidate.latest_performance.role or 'N/A' }}
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: #111827;">
+                                        <strong>Recommendation:</strong>
+                                        <span style="padding: 0.2rem 0.5rem; border-radius: 999px; background: #ecfeff; color: #155e75; font-weight: 600;">
+                                            {{ candidate.latest_performance.recommendation }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 0.5rem; display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: #374151;">
+                                    <span><strong>Overall:</strong> {{ candidate.latest_performance.overall }}/5</span>
+                                    <span><strong>Technical:</strong> {{ candidate.latest_performance.technical }}</span>
+                                    <span><strong>Communication:</strong> {{ candidate.latest_performance.communication }}</span>
+                                    <span><strong>Depth:</strong> {{ candidate.latest_performance.depth }}</span>
+                                </div>
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #4b5563;">
+                                    <strong>Completion:</strong>
+                                    {{ candidate.latest_performance.questions_completed }}/{{ candidate.latest_performance.total_questions }} questions
+                                </div>
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #4b5563;">
+                                    <strong>Summary:</strong> {{ candidate.latest_performance.summary_text }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if candidate.applications %}
+                            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #4b5563;">
+                                {% for application in candidate.applications %}
+                                <div>
+                                    {{ application.job_title }}{% if application.job_company %} ({{ application.job_company }}){% endif %}
+                                    - {{ application.status }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                             {% else %}
                             <div style="font-size: 0.9rem; color: #6b7280;">No interviews completed yet</div>
                             {% endif %}

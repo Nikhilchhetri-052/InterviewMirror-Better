@@ -33,16 +33,23 @@ class LLMService:
     def __init__(self):
         self.model = os.getenv("OLLAMA_MODEL", "mistral")
         self.role_aliases = {
-            "frontend": "Frontend",
-            "front end": "Frontend",
-            "backend": "BackendDeveloper",
-            "backenddeveloper": "BackendDeveloper",
-            "data scientist": "DataScientist",
-            "datascientist": "DataScientist",
-            "devops": "DevOps",
-            "product manager": "ProductManager",
-            "productmanager": "ProductManager",
-            "fullstack": "Fullstack",
+            "frontend": "Frontend Developer",
+            "front end": "Frontend Developer",
+            "frontend developer": "Frontend Developer",
+            "backend": "Backend Developer",
+            "backenddeveloper": "Backend Developer",
+            "backend developer": "Backend Developer",
+            "data scientist": "Data Scientist",
+            "datascientist": "Data Scientist",
+            "devops": "DevOps Engineer",
+            "devops engineer": "DevOps Engineer",
+            "product manager": "Product Manager",
+            "productmanager": "Product Manager",
+            "fullstack": "Fullstack Developer",
+            "full stack": "Fullstack Developer",
+            "fullstack developer": "Fullstack Developer",
+            "qa": "QA Engineer",
+            "qa engineer": "QA Engineer",
         }
 
     def _normalize_role_for_bank(self, role: str) -> str:

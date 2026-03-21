@@ -282,53 +282,39 @@
             </div>
 
             <div id="jobList">
-                <!-- Job 1 -->
-                <div class="job-card" onclick="openApplyModal('Senior Frontend Engineer', 'Google', 'Mountain View, CA (Hybrid)', 'We are looking for a visionary Frontend Engineer to lead our next-generation Search UI team. You will work with React, TypeScript, and high-scale systems.')">
+                {% if jobs %}
+                {% for job in jobs %}
+                <div class="job-card"
+                     onclick="openApplyModal(this)"
+                     data-job-id="{{ job._id }}"
+                     data-job-role="{{ job.title or job.job_type or 'general' }}"
+                     data-title="{{ job.title }}"
+                     data-company="{{ job.company }}"
+                     data-location="{{ job.location }}"
+                     data-workplace="{{ job.workplace }}"
+                     data-description="{{ job.description }}">
                     <div class="job-info">
-                        <div class="company-logo" style="background: #fff1f2; color: #e11d48;">G</div>
+                        <div class="company-logo">{{ (job.company or 'C')[:1] }}</div>
                         <div class="job-details">
-                            <h3>Senior Frontend Engineer</h3>
+                            <h3>{{ job.title }}</h3>
                             <div class="job-meta">
-                                <span>Google</span>
+                                <span>{{ job.company }}</span>
                                 <span>•</span>
-                                <span>Mountain View (Hybrid)</span>
+                                <span>{{ job.location }}{% if job.workplace %} ({{ job.workplace }}){% endif %}</span>
                             </div>
                         </div>
                     </div>
                     <button class="apply-btn-pill">Apply Now</button>
                 </div>
-
-                <!-- Job 2 -->
-                <div class="job-card" onclick="openApplyModal('Product Designer', 'Spotify', 'Remote', 'Join the Spotify Design team to craft beautiful audio experiences for millions. You will focus on the mobile app and personalization features.')">
-                    <div class="job-info">
-                        <div class="company-logo" style="background: #f0fdf4; color: #16a34a;">S</div>
-                        <div class="job-details">
-                            <h3>Product Designer</h3>
-                            <div class="job-meta">
-                                <span>Spotify</span>
-                                <span>•</span>
-                                <span>Remote</span>
-                            </div>
-                        </div>
+                {% endfor %}
+                {% else %}
+                <div class="job-card" style="cursor: default;">
+                    <div class="job-details">
+                        <h3>No active jobs right now</h3>
+                        <div class="job-meta">Please check back later.</div>
                     </div>
-                    <button class="apply-btn-pill">Apply Now</button>
                 </div>
-
-                <!-- Job 3 -->
-                <div class="job-card" onclick="openApplyModal('Backend Developer', 'Stripe', 'Dublin, IE (On-site)', 'Help us build the economic infrastructure of the internet. You will be responsible for scaling our payment processing APIs.')">
-                    <div class="job-info">
-                        <div class="company-logo" style="background: #eff6ff; color: #2563eb;">St</div>
-                        <div class="job-details">
-                            <h3>Backend Developer</h3>
-                            <div class="job-meta">
-                                <span>Stripe</span>
-                                <span>•</span>
-                                <span>Dublin (On-site)</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="apply-btn-pill">Apply Now</button>
-                </div>
+                {% endif %}
             </div>
         </main>
     </div>
@@ -359,7 +345,7 @@
 
                 <div style="display:flex; gap:1rem;">
                     <button type="button" onclick="closeModal()" style="flex:1; margin-top:1.5rem; padding:1rem; border:1px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer; font-weight:600;">Cancel</button>
-                    <button type="submit" class="submit-btn" style="flex:1;"><a href="interviewafterlogin" class="nav-link"><span style="color: #ffffff; font-size:19px;">Submit Application</span></a></button>
+                    <button type="submit" class="submit-btn" style="flex:1;">Submit Application</button>
                 </div>
             </form>
         </div>
@@ -369,11 +355,19 @@
         const modal = document.getElementById('applyModal');
         const cvInput = document.getElementById('cvInput');
         const skipCheck = document.getElementById('skipCheckout');
+        let selectedJobId = null;
 
-        function openApplyModal(title, company, loc, desc) {
+        function openApplyModal(jobCard) {
+            selectedJobId = jobCard.dataset.jobId;
+            const title = jobCard.dataset.title || "Job";
+            const company = jobCard.dataset.company || "Company";
+            const location = jobCard.dataset.location || "Location";
+            const workplace = jobCard.dataset.workplace || "";
+            const description = jobCard.dataset.description || "No description available.";
+
             document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalMeta').innerText = `${company} • ${loc}`;
-            document.getElementById('modalDesc').innerText = desc;
+            document.getElementById('modalMeta').innerText = `${company} • ${location}${workplace ? ` (${workplace})` : ''}`;
+            document.getElementById('modalDesc').innerText = description;
             
             // Reset state
             skipCheck.checked = false;
@@ -407,13 +401,31 @@
                 return;
             }
             
+            if (!selectedJobId) {
+                return;
+            }
+
             // Success logic
             const btn = e.target.querySelector('.submit-btn');
             btn.innerText = "Processing...";
-            
-            setTimeout(() => {
-                window.location.href = "{{ url_for('interviewafterlogin') }}";
-            }, 1000);
+            btn.disabled = true;
+
+            fetch("/api/job/apply", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ job_id: selectedJobId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success || !data.redirect_url) {
+                    throw new Error(data.error || "Failed to submit application");
+                }
+                window.location.href = data.redirect_url;
+            })
+            .catch(() => {
+                btn.innerText = "Submit Application";
+                btn.disabled = false;
+            });
         });
 
         // Close on background click

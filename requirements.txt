@@ -1,0 +1,24 @@
+Flask==3.0.0
+flask-cors==6.0.1
+Flask-PyMongo==2.3.0
+Flask-Bcrypt==1.0.1
+pymongo==4.6.0
+python-dotenv==1.0.0
+
+
+# LLM provider integration (optional runtime, enabled via env vars)
+openai==1.82.1
+requests>=2.31.0
+
+# Audio transcription / TTS paths used in app.py
+openai-whisper==20250625
+torch==2.4.1
+soundfile==0.13.1
+pyttsx3==2.99
+
+# Resume parsing endpoint dependencies
+spacy==3.8.7
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+pdfplumber==0.11.8
+docx2txt==0.9
+sentence-transformers==5.1.2
