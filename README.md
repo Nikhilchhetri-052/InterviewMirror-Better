@@ -2,6 +2,10 @@
 
 InterviewMirror is an AI-assisted mock interview web application that helps candidates practice role-based interviews with adaptive follow-up questions, answer evaluation, and speech-enabled interaction.
 
+## Demo
+
+[![Watch Demo](https://img.youtube.com/vi/vjetB-Eohpg/0.jpg)]
+(https://youtu.be/vjetB-Eohpg)
 ## Purpose
 - Help learners and job seekers prepare for technical and role-specific interviews.
 - Simulate realistic interview flow with main and follow-up questions.
