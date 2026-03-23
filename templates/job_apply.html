@@ -409,23 +409,52 @@
             const btn = e.target.querySelector('.submit-btn');
             btn.innerText = "Processing...";
             btn.disabled = true;
+            const applyPayload = { job_id: selectedJobId };
 
-            fetch("/api/job/apply", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ job_id: selectedJobId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success || !data.redirect_url) {
-                    throw new Error(data.error || "Failed to submit application");
-                }
-                window.location.href = data.redirect_url;
-            })
-            .catch(() => {
-                btn.innerText = "Submit Application";
-                btn.disabled = false;
-            });
+            const proceedToApply = () => {
+                fetch("/api/job/apply", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(applyPayload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success || !data.redirect_url) {
+                        throw new Error(data.error || "Failed to submit application");
+                    }
+                    window.location.href = data.redirect_url;
+                })
+                .catch(() => {
+                    btn.innerText = "Submit Application";
+                    btn.disabled = false;
+                });
+            };
+
+            if (!skipCheck.checked && cvInput.files && cvInput.files[0]) {
+                const resumeFormData = new FormData();
+                resumeFormData.append("resume", cvInput.files[0]);
+
+                fetch("/upload_resume", {
+                    method: "POST",
+                    body: resumeFormData
+                })
+                .then(res => res.json())
+                .then(uploadData => {
+                    if (uploadData.error) {
+                        throw new Error(uploadData.error || "Resume upload failed");
+                    }
+                    applyPayload.resume_data = uploadData.parsed_resume;
+                    applyPayload.resume_filename = uploadData.resume_filename;
+                    proceedToApply();
+                })
+                .catch(() => {
+                    btn.innerText = "Submit Application";
+                    btn.disabled = false;
+                });
+                return;
+            }
+
+            proceedToApply();
         });
 
         // Close on background click

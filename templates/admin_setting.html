@@ -243,6 +243,15 @@
                                     {{ application.job_title }}{% if application.job_company %} ({{ application.job_company }}){% endif %}
                                     - {{ application.status }}
                                 </div>
+                                {% if application.resume_admin_view %}
+                                <div style="margin: 0.35rem 0 0.6rem 0.25rem; padding: 0.5rem; border-left: 3px solid #0f766e; background: #f8fafc; border-radius: 6px;">
+                                    <div><strong>Resume Name:</strong> {{ application.resume_admin_view.candidate_name }}</div>
+                                    <div><strong>Contact:</strong> {{ application.resume_admin_view.contact_info }}</div>
+                                    <div><strong>Education:</strong> {{ application.resume_admin_view.latest_education }}</div>
+                                    <div><strong>Top Skills:</strong> {{ (application.resume_admin_view.top_skills or [])|join(', ') }}</div>
+                                    <div><strong>Projects:</strong> {{ application.resume_admin_view.project_count or 0 }}</div>
+                                </div>
+                                {% endif %}
                                 {% endfor %}
                             </div>
                             {% endif %}

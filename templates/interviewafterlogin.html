@@ -212,6 +212,15 @@
                 </div>
             </section>
 
+            <section class="feedback-section" style="margin-top: 1rem;">
+                <h2>Confidence Analyzer</h2>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                    <button id="startFaceAnalysisBtn" class="btn secondary-btn">Start Face Confidence Analysis</button>
+                    <button id="loadFaceReportBtn" class="btn secondary-btn">Load Latest Confidence Report</button>
+                </div>
+                <div id="faceAnalysisResult" class="feedback-box">No confidence report loaded yet.</div>
+            </section>
+
             <div class="bottom-nav">
                 <a href="{{ url_for('homepageafterlogin') }}" class="btn secondary-btn">Back to Home</a>
             </div>
@@ -273,6 +282,9 @@
             const textAnswerInput = document.getElementById('textAnswerInput');
             const submitTextAnswerBtn = document.getElementById('submitTextAnswerBtn');
             const answerModeInputs = document.querySelectorAll('input[name="answerMode"]');
+            const startFaceAnalysisBtn = document.getElementById('startFaceAnalysisBtn');
+            const loadFaceReportBtn = document.getElementById('loadFaceReportBtn');
+            const faceAnalysisResult = document.getElementById('faceAnalysisResult');
 
             interviewRoleElement.textContent = `${window.capitalizeFirstLetter(role)} Interview`;
 
@@ -569,6 +581,46 @@
                     if (!submitTextAnswerBtn.disabled || !textAnswerInput.disabled) {
                         submitTextAnswerBtn.disabled = false;
                     }
+                }
+            });
+
+            startFaceAnalysisBtn.addEventListener('click', async () => {
+                startFaceAnalysisBtn.disabled = true;
+                faceAnalysisResult.textContent = "Starting analyzer...";
+                try {
+                    const res = await fetch("/api/face-analysis/start", { method: "POST" });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.error || "Failed to start analyzer");
+                    }
+                    faceAnalysisResult.textContent = data.message || "Analyzer started.";
+                } catch (err) {
+                    faceAnalysisResult.textContent = err.message || "Could not start analyzer.";
+                } finally {
+                    startFaceAnalysisBtn.disabled = false;
+                }
+            });
+
+            loadFaceReportBtn.addEventListener('click', async () => {
+                loadFaceReportBtn.disabled = true;
+                faceAnalysisResult.textContent = "Loading latest confidence report...";
+                try {
+                    const res = await fetch("/api/face-analysis/latest");
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.error || "No report available yet.");
+                    }
+                    const summary = data.summary || {};
+                    faceAnalysisResult.textContent =
+                        `Report: ${data.file}\n` +
+                        `Avg Confidence: ${summary.avg_confidence ?? "N/A"}%\n` +
+                        `Avg Nervousness: ${summary.avg_nervousness ?? "N/A"}%\n` +
+                        `Dominant Emotion: ${summary.dominant_emotion ?? "N/A"}\n` +
+                        `Duration: ${data.session_duration_sec ?? "N/A"}s`;
+                } catch (err) {
+                    faceAnalysisResult.textContent = err.message || "Unable to load report.";
+                } finally {
+                    loadFaceReportBtn.disabled = false;
                 }
             });
         });

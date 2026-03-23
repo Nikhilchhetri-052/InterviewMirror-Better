@@ -931,7 +931,7 @@ class InterviewAnalyzer:
     # ── Public API ───────────────────────────────────────────────────
 
     def run_live(self):
-        """Start real-time webcam analysis. Press Q to quit."""
+        """Start real-time webcam analysis. Press Q or close window to quit."""
         cap = cv2.VideoCapture(self.cfg.camera_index)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.cfg.frame_width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.cfg.frame_height)
@@ -944,8 +944,11 @@ class InterviewAnalyzer:
         self.session_start = time.time()
 
         print("\n" + "═"*60)
-        print("  InterviewLens — Press Q to quit, R to reset stats")
+        print("  InterviewLens — Press Q (or close window) to quit, R to reset stats")
         print("═"*60 + "\n")
+
+        window_name = "InterviewLens"
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
         with self.mp_fm.FaceMesh(
             max_num_faces=1,
@@ -959,6 +962,13 @@ class InterviewAnalyzer:
             self.pose_est = HeadPoseEstimator(w, h)
 
             while True:
+                # Stop cleanly if user closes the OpenCV window.
+                try:
+                    if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+                        break
+                except cv2.error:
+                    break
+
                 ok, frame = cap.read()
                 if not ok:
                     break
@@ -1001,7 +1011,7 @@ class InterviewAnalyzer:
 
                 # ── Overlay ───────────────────────────────────────
                 display = self.viz.draw(frame, features, avg, blink_rate, conf, nerv)
-                cv2.imshow("InterviewLens", display)
+                cv2.imshow(window_name, display)
 
                 # ── Console update ────────────────────────────────
                 if len(self.conf_history) % 15 == 0:

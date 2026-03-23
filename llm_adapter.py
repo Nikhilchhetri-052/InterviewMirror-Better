@@ -86,13 +86,18 @@ class LLMService:
         except Exception as exc:
             print(f"[LLMService] Ollama question generation failed: {exc}")
 
-        from question_bank import question_bank
+        try:
+            from question_bank import question_bank
 
-        normalized_role = self._normalize_role_for_bank(role)
-        question_obj = question_bank.get_question(normalized_role, difficulty)
-        question_text = self._extract_question_text(question_obj)
-        if question_text:
-            return question_text
+            normalized_role = self._normalize_role_for_bank(role)
+            question_obj = question_bank.get_question(normalized_role, difficulty)
+            question_text = self._extract_question_text(question_obj)
+            if question_text:
+                return question_text
+        except ModuleNotFoundError:
+            print("[LLMService] question_bank module not found; using generic fallback question.")
+        except Exception as exc:
+            print(f"[LLMService] question_bank fallback failed: {exc}")
 
         fallback_role = role or "this role"
         return f"Tell me about a challenging project you handled as a {fallback_role} and the impact you delivered."
